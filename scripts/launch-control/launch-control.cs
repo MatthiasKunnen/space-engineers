@@ -81,10 +81,7 @@ void Main(string args = "START") {
     WriteLine($"Angle deviation: {Math.Round(angle)}°");
 
     if (controlBlock.GetNaturalGravity().Length() <= gravityTreshold || args == "STOP") {
-        for (int i = 0; i < thrusters.Count; i++) {
-            var thruster = thrusters[i];
-            thruster.SetValueFloat("Override", 0);
-        }
+        thrusters.ForEach(t => t.SetValueFloat("Override", 0));
 
         timer.ApplyAction("Stop");
         ClearOutput();
@@ -110,14 +107,8 @@ void ClearOutput() {
     }
 }
 
-double GetCurrentOverride(List<IMyThrust> thrusters) {
-    double totalOverride = 0;
-
-    for (var i = 0; i < thrusters.Count; i++) {
-        totalOverride += (double)thrusters[i].CurrentThrust;
-    }
-
-    return totalOverride / thrusters.Count;
+double GetCurrentOverride() {
+    return thrusters.Average(t => t.CurrentThrust);
 }
 
 void ApplyThrust() {
@@ -130,10 +121,7 @@ void ApplyThrust() {
 
     if (!reachedTargetSpeedOnce) {
         WriteLine("Setting max value");
-        for (int i = 0; i < thrusters.Count; i++) {
-            var thruster = thrusters[i];
-            thruster.SetValueFloat("Override", thruster.MaxThrust);
-        }
+        thrusters.ForEach(t => t.SetValueFloat("Override", t.MaxThrust));
     } else if (reachedTargetSpeed) {
         SetThrusterMultiplier(step);
         isPreviousCorrectionIncrease = false;
@@ -153,10 +141,7 @@ void ApplyThrust() {
 
 void SetThrusterMultiplier(double multiplier) {
     WriteLine($"Apply thrust multiplier {multiplier}");
-    for (int i = 0; i < thrusters.Count; i++) {
-        var thruster = thrusters[i];
-        thruster.SetValueFloat("Override", thruster.CurrentThrust * (float)multiplier);
-    }
+    thrusters.ForEach(t => t.SetValueFloat("Override", t.CurrentThrust * (float)multiplier));
 }
 
 List<T> GetBlocksInGroup<T>(string groupName) where T : class {
