@@ -47,7 +47,6 @@ void Main(string args = "START") {
     }
 
     thrusters = GetBlocksInGroup<IMyThrust>(ascentThrustersGroup);
-    currentOverride = GetCurrentOverride(thrusters);
 
     if (controlBlock == null) {
         WriteLine("No control block found on grid.");
@@ -61,12 +60,13 @@ void Main(string args = "START") {
         return;
     }
 
-    if (thrusters.Count == 0) {
+    if (thrusters == null || thrusters.Count == 0) {
         WriteLine($"No thrusters found in \"{ascentThrustersGroup}\" group.");
         WriteLine("Terminating script.");
         return;
     }
 
+    currentOverride = GetCurrentOverride();
     speed = controlBlock.GetShipSpeed();
 
     ApplyThrust();
@@ -160,13 +160,13 @@ void SetThrusterMultiplier(double multiplier) {
 }
 
 List<T> GetBlocksInGroup<T>(string groupName) where T : class {
-    var result = new List<T>();
-    List<IMyBlockGroup> groups = new List<IMyBlockGroup>();
+    var groups = new List<IMyBlockGroup>();
     GridTerminalSystem.GetBlockGroups(groups);
 
     for (int i = 0; i < groups.Count; i++) {
         if (groups[i].Name == groupName) {
             var groupBlocks = new List<IMyTerminalBlock>();
+            var result = new List<T>();
 
             groups[i].GetBlocks(groupBlocks);
             for (int t = 0; t < groupBlocks.Count; t++) {
@@ -177,5 +177,5 @@ List<T> GetBlocksInGroup<T>(string groupName) where T : class {
         }
     }
 
-    return result;
+    return null;
 }
