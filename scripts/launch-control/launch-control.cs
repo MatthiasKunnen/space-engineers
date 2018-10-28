@@ -20,7 +20,6 @@ double step = 0.5;
 double minStep = 0.0001;
 double targetSpeed = 250;
 double speed, angle;
-double currentOverride = 1;
 double gravityTreshold = 0; // Specifies at how many gyro script will stop, 0g by default.
 
 bool reachedTargetSpeedOnce;
@@ -66,7 +65,6 @@ void Main(string args = "START") {
         return;
     }
 
-    currentOverride = GetCurrentOverride();
     speed = controlBlock.GetShipSpeed();
 
     ApplyThrust();
@@ -109,10 +107,6 @@ void ClearOutput() {
     if (lcd != null) {
         lcd.WritePublicText("");
     }
-}
-
-double GetCurrentOverride() {
-    return thrusters.Average(t => t.CurrentThrust);
 }
 
 void ApplyThrust() {
