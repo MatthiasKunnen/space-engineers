@@ -74,8 +74,12 @@ void Main(string args = "START") {
     timer.SetValue("TriggerDelay", 1f);
     timer.ApplyAction("Start");
 
-    angle = Math.Acos(Vector3D.Dot(Vector3D.Normalize(controlBlock.GetNaturalGravity()),
-    Vector3D.Normalize(-controlBlock.GetShipVelocities().LinearVelocity))) * 180 / Math.PI;
+    angle = Math.Acos(
+        Vector3D.Dot(
+            Vector3D.Normalize(controlBlock.GetNaturalGravity()),
+            Vector3D.Normalize(-controlBlock.GetShipVelocities().LinearVelocity)
+        )
+    ) * 180 / Math.PI;
     WriteLine($"Ship speed: {Math.Round(speed, 1)} m/s");
     WriteLine($"Target: {Math.Round(targetSpeed, 1)} m/s");
     WriteLine($"Angle deviation: {Math.Round(angle)}°");
