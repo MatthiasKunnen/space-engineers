@@ -21,7 +21,7 @@ double minStep = 0.0001;
 double targetSpeed = 250;
 double speed, angle;
 double currentOverride = 1;
-double gravityTreshold = 0.2; // Specifies at how many g script will stop, 0g by default.
+double gravityTreshold = 0; // Specifies at how many gyro script will stop, 0g by default.
 
 bool reachedTargetSpeedOnce;
 bool isPreviousCorrectionIncrease;
