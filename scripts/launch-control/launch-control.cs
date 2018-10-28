@@ -15,7 +15,6 @@ string ascentTimerName = "Launch control Timer Block"; // Set up to run this pro
 string referenceBlock = "Remote Control - Reference";
 string lcdDisplay = "Launch control LCD Panel"; // Optional LCD display with basic information.
 
-
 double step = 0.5;
 double minStep = 0.0001;
 double targetSpeed = 250;
@@ -47,6 +46,11 @@ void Main(string args = "START") {
 
     thrusters = GetBlocksInGroup<IMyThrust>(ascentThrustersGroup);
 
+    var gravity = controlBlock.GetNaturalGravity();
+    var gravityLength = gravity.Length();
+    var escaped = gravityLength <= gravityTreshold;
+    gravity.Normalize();
+
     if (controlBlock == null) {
         WriteLine("No control block found on grid.");
         WriteLine("Terminating script.");
@@ -67,22 +71,25 @@ void Main(string args = "START") {
 
     speed = controlBlock.GetShipSpeed();
 
-    ApplyThrust();
+    WriteLine($"Ship speed: {Math.Round(speed, 1)} m/s");
+    WriteLine($"Target: {Math.Round(targetSpeed, 1)} m/s");
+
+    if (!escaped) {
+        ApplyThrust();
+        angle = Math.Acos(
+            Vector3D.Dot(
+                Vector3D.Normalize(controlBlock.GetNaturalGravity()),
+                Vector3D.Normalize(-controlBlock.GetShipVelocities().LinearVelocity)
+            )
+        ) * 180 / Math.PI;
+
+        WriteLine($"Angle deviation: {Math.Round(angle)}°");
+    }
 
     timer.SetValue("TriggerDelay", 1f);
     timer.ApplyAction("Start");
 
-    angle = Math.Acos(
-        Vector3D.Dot(
-            Vector3D.Normalize(controlBlock.GetNaturalGravity()),
-            Vector3D.Normalize(-controlBlock.GetShipVelocities().LinearVelocity)
-        )
-    ) * 180 / Math.PI;
-    WriteLine($"Ship speed: {Math.Round(speed, 1)} m/s");
-    WriteLine($"Target: {Math.Round(targetSpeed, 1)} m/s");
-    WriteLine($"Angle deviation: {Math.Round(angle)}°");
-
-    if (controlBlock.GetNaturalGravity().Length() <= gravityTreshold || args == "STOP") {
+    if (args == "STOP" || escaped) {
         thrusters.ForEach(t => t.SetValueFloat("Override", 0));
 
         timer.ApplyAction("Stop");
