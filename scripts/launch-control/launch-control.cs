@@ -24,6 +24,10 @@ double gravityTreshold = 0; // Specifies at how many gyro script will stop, 0g b
 bool reachedTargetSpeedOnce;
 bool isPreviousCorrectionIncrease;
 
+string turnAndBurn;
+
+Vector3D lastObservedGravity;
+
 GyroController gyroController;
 List<IMyGyro> gyros;
 List<IMyThrust> thrusters;
@@ -39,6 +43,7 @@ void Main(string args = "START") {
     if (args == "START") {
         isPreviousCorrectionIncrease = true;
         reachedTargetSpeedOnce = false;
+        turnAndBurn = null;
     }
 
     if (lcd != null) {
@@ -54,6 +59,10 @@ void Main(string args = "START") {
     var gravityLength = gravity.Length();
     var escaped = gravityLength <= gravityTreshold;
     gravity.Normalize();
+
+    if (gravityLength != 0) {
+        lastObservedGravity = gravity;
+    }
 
     if (controlBlock == null) {
         WriteLine("No control block found on grid.");
@@ -94,9 +103,20 @@ void Main(string args = "START") {
     timer.SetValue("TriggerDelay", 1f);
     timer.ApplyAction("Start");
 
-    if (args == "STOP" || escaped) {
+    if (escaped) {
+        if (turnAndBurn == null) {
+            thrusters.ForEach(t => t.SetValueFloat("Override", 0));
+            SetDampeners(false);
+        }
+
+        turnAndBurn = gyroController.Align(lastObservedGravity, Base6Directions.Direction.Up) ? "aligned" : "started";
+        WriteLine($"Turn and burn: {turnAndBurn}");
+    }
+
+    if (args == "STOP" || (escaped && turnAndBurn == "aligned")) {
         thrusters.ForEach(t => t.SetValueFloat("Override", 0));
         gyroController.Stop();
+        SetDampeners(true);
         timer.ApplyAction("Stop");
         ClearOutput();
         WriteLine("Launch control ended.");
