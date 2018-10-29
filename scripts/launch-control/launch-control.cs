@@ -320,6 +320,9 @@ partial class GyroController: MyGridProgram {
             gyro.GetActionWithName("OnOff_On").Apply(gyro);
             if (gyro.GyroOverride) {
                 gyro.GetActionWithName("Override").Apply(gyro);
+                gyro.SetValueFloat("Pitch", 0);
+                gyro.SetValueFloat("Yaw", 0);
+                gyro.SetValueFloat("Roll", 0);
             }
         });
     }
