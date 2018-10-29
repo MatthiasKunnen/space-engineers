@@ -30,6 +30,7 @@ Vector3D lastObservedGravity;
 
 GyroController gyroController;
 List<IMyGyro> gyros;
+ThrustController thrustController;
 List<IMyThrust> thrusters;
 IMyShipController controlBlock;
 IMyTimerBlock timer;
@@ -52,6 +53,7 @@ void Main(string args = "START") {
     }
 
     thrusters = GetBlocksInGroup<IMyThrust>(ascentThrustersGroup);
+    thrustController = new ThrustController(thrusters);
     gyros = GetBlocksOfType<IMyGyro>();
     gyroController = new GyroController(controlBlock, gyros, Base6Directions.Direction.Down);
 
@@ -105,7 +107,7 @@ void Main(string args = "START") {
 
     if (escaped) {
         if (turnAndBurn == null) {
-            thrusters.ForEach(t => t.SetValueFloat("Override", 0));
+            thrustController.Stop();
             SetDampeners(false);
         }
 
@@ -114,7 +116,7 @@ void Main(string args = "START") {
     }
 
     if (args == "STOP" || (escaped && turnAndBurn == "aligned")) {
-        thrusters.ForEach(t => t.SetValueFloat("Override", 0));
+        thrustController.Stop();
         gyroController.Stop();
         SetDampeners(true);
         timer.ApplyAction("Stop");
@@ -151,7 +153,7 @@ void ApplyThrust() {
 
     if (!reachedTargetSpeedOnce) {
         WriteLine("Setting max value");
-        thrusters.ForEach(t => t.SetValueFloat("Override", t.MaxThrust));
+        thrustController.ApplyFullThrust();
     } else if (reachedTargetSpeed) {
         SetThrusterMultiplier(step);
         isPreviousCorrectionIncrease = false;
@@ -210,6 +212,62 @@ List<T> GetBlocksOfType<T>() where T : class {
 void SetDampeners(bool enabled) {
     if (controlBlock.DampenersOverride != enabled) {
         controlBlock.GetActionWithName("DampenersOverride").Apply(controlBlock);
+    }
+}
+
+class ThrustController {
+
+    // The available thrust in N
+    double availableThrust;
+
+    List<IMyThrust> thrusters;
+
+    public ThrustController(List<IMyThrust> thrusters) {
+        if (thrusters.Count == 0) {
+            throw new ArgumentException("At least one thruster required");
+        }
+
+        this.availableThrust = thrusters.Sum(t => t.MaxThrust);
+        this.thrusters = thrusters;
+    }
+
+    /// <summary>
+    /// Apply thrust evenly distributed over all engines.
+    /// </summary>
+    /// <param name="N">
+    /// The amount of thrust to apply in newton. If more thrust is requested
+    /// than available, the maximum amount of thrust will be applied.
+    /// </param>
+    public void ApplyThrust(double N) {
+        if (N == 0) {
+            this.Stop();
+            return;
+        }
+
+        if (N >= availableThrust) {
+            this.ApplyFullThrust();
+            return;
+        }
+
+        double percentagePerThruster = N / availableThrust;
+
+        this.thrusters.ForEach(t => {
+            var thrustToApply = Math.Min(t.MaxThrust * percentagePerThruster, N);
+            t.SetValueFloat("Override", (float)thrustToApply);
+            N -= thrustToApply;
+        });
+
+        // Correct rounding errors
+        var thruster = this.thrusters[0];
+        thruster.SetValueFloat("Override", thruster.ThrustOverride + (float)N);
+    }
+
+    public void ApplyFullThrust() {
+        thrusters.ForEach(t => t.SetValueFloat("Override", t.MaxThrust));
+    }
+
+    public void Stop() {
+        thrusters.ForEach(t => t.SetValueFloat("Override", 0));
     }
 }
 
