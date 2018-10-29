@@ -5,13 +5,11 @@
 Quick setup:
 1. Put thrusters you want to control in group "Thrusters UP"
 2. Have remote control block on grid
-3. Timer named "Rocket Timer Block" set to run this script with argument "TIMER"
 4. Run script to start.
 
 ******************************************************************************/
 
 string ascentThrustersGroup = "Thrusters UP"; // Group with liftoff thrusters
-string ascentTimerName = "Launch control Timer Block"; // Set up to run this programmable block
 string referenceBlock = "Remote Control - Reference";
 string lcdDisplay = "Launch control LCD Panel"; // Optional LCD display with basic information.
 
@@ -33,15 +31,14 @@ List<IMyGyro> gyros;
 ThrustController thrustController;
 List<IMyThrust> thrusters;
 IMyShipController controlBlock;
-IMyTimerBlock timer;
 IMyTextPanel lcd;
 
 void Main(string args = "START") {
     controlBlock = GridTerminalSystem.GetBlockWithName(referenceBlock) as IMyShipController;
-    timer = GridTerminalSystem.GetBlockWithName(ascentTimerName) as IMyTimerBlock;
     lcd = GridTerminalSystem.GetBlockWithName(lcdDisplay) as IMyTextPanel;
 
     if (args == "START") {
+        Runtime.UpdateFrequency = UpdateFrequency.Update10;
         isPreviousCorrectionIncrease = true;
         reachedTargetSpeedOnce = false;
         turnAndBurn = null;
@@ -55,7 +52,7 @@ void Main(string args = "START") {
     thrusters = GetBlocksInGroup<IMyThrust>(ascentThrustersGroup);
     thrustController = new ThrustController(thrusters);
     gyros = GetBlocksOfType<IMyGyro>();
-    gyroController = new GyroController(controlBlock, gyros, Base6Directions.Direction.Down);
+    gyroController = new GyroController(controlBlock, gyros, Base6Directions.Direction.Down, 0.8);
 
     var gravity = controlBlock.GetNaturalGravity();
     var gravityStrength = gravity.Length();
@@ -68,12 +65,6 @@ void Main(string args = "START") {
 
     if (controlBlock == null) {
         WriteLine("No control block found on grid.");
-        WriteLine("Terminating script.");
-        return;
-    }
-
-    if (timer == null) {
-        WriteLine($"\"{ascentTimerName}\" not found on grid.");
         WriteLine("Terminating script.");
         return;
     }
@@ -102,9 +93,6 @@ void Main(string args = "START") {
         WriteLine($"Angle deviation: {Math.Round(angle)}°");
     }
 
-    timer.SetValue("TriggerDelay", 1f);
-    timer.ApplyAction("Start");
-
     if (escaped) {
         if (turnAndBurn == null) {
             thrustController.Stop();
@@ -119,7 +107,7 @@ void Main(string args = "START") {
         thrustController.Stop();
         gyroController.Stop();
         SetDampeners(true);
-        timer.ApplyAction("Stop");
+        Runtime.UpdateFrequency = UpdateFrequency.None;
         ClearOutput();
         WriteLine("Launch control ended.");
     }
@@ -304,7 +292,7 @@ partial class GyroController: MyGridProgram {
         IMyShipController gyroControl,
         List<IMyGyro> gyros,
         Base6Directions.Direction alignment,
-        double powerCoefficient = 0.3
+        double powerCoefficient = 1
     ) {
         this.gyroControl = gyroControl;
         this.gyros = gyros;
