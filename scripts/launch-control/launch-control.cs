@@ -56,11 +56,11 @@ void Main(string args = "START") {
     gyroController = new GyroController(controlBlock, gyros, Base6Directions.Direction.Down);
 
     var gravity = controlBlock.GetNaturalGravity();
-    var gravityLength = gravity.Length();
-    var escaped = gravityLength <= gravityTreshold;
+    var gravityStrength = gravity.Length();
+    var escaped = gravityStrength <= gravityTreshold;
     gravity.Normalize();
 
-    if (gravityLength != 0) {
+    if (gravityStrength != 0) {
         lastObservedGravity = gravity;
     }
 
