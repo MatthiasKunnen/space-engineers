@@ -13,19 +13,17 @@ string ascentThrustersGroup = "Thrusters UP"; // Group with liftoff thrusters
 string referenceBlock = "Remote Control - Reference";
 string lcdDisplay = "Launch control LCD Panel"; // Optional LCD display with basic information.
 
-double step = 0.5;
-double minStep = 0.0001;
 double targetSpeed = 250;
 double speed, angle;
+double gravityStrength;
 double gravityTreshold = 0; // Specifies at how many gyro script will stop, 0g by default.
 
-bool reachedTargetSpeedOnce;
-bool isPreviousCorrectionIncrease;
+bool reachedTopSpeedOnce;
 
 string turnAndBurn;
 
+Vector3D gravity;
 Vector3D lastObservedGravity;
-
 GyroController gyroController;
 List<IMyGyro> gyros;
 ThrustController thrustController;
@@ -39,8 +37,7 @@ void Main(string args = "START") {
 
     if (args == "START") {
         Runtime.UpdateFrequency = UpdateFrequency.Update10;
-        isPreviousCorrectionIncrease = true;
-        reachedTargetSpeedOnce = false;
+        reachedTopSpeedOnce = false;
         turnAndBurn = null;
     }
 
@@ -54,8 +51,8 @@ void Main(string args = "START") {
     gyros = GetBlocksOfType<IMyGyro>();
     gyroController = new GyroController(controlBlock, gyros, Base6Directions.Direction.Down, 0.8);
 
-    var gravity = controlBlock.GetNaturalGravity();
-    var gravityStrength = gravity.Length();
+    gravity = controlBlock.GetNaturalGravity();
+    gravityStrength = gravity.Length();
     var escaped = gravityStrength <= gravityTreshold;
     gravity.Normalize();
 
@@ -76,6 +73,9 @@ void Main(string args = "START") {
     }
 
     speed = controlBlock.GetShipSpeed();
+    if (speed > targetSpeed * 0.995) {
+        reachedTopSpeedOnce = true;
+    }
 
     WriteLine($"Ship speed: {Math.Round(speed, 1)} m/s");
     WriteLine($"Target: {Math.Round(targetSpeed, 1)} m/s");
@@ -131,37 +131,26 @@ void ClearOutput() {
     }
 }
 
-void ApplyThrust() {
-    var decreaseStep = false;
-    var reachedTargetSpeed = speed >= 0.99 * targetSpeed;
+double CalculateRequiredThrust() {
+    var mass = controlBlock.CalculateShipMass().TotalMass;
+    var gravitationalAcceleration = gravityStrength / 10 * 9.81;
+    var requiredThrust = mass * gravitationalAcceleration;
+    WriteLine($"Mass {mass} kg");
+    WriteLine($"Gravity {Math.Round(gravitationalAcceleration)} m/s²");
+    WriteLine($"Thrust required: {Math.Round(requiredThrust)} N");
 
-    if (reachedTargetSpeed) {
-        reachedTargetSpeedOnce = true;
-    }
-
-    if (!reachedTargetSpeedOnce) {
-        WriteLine("Setting max value");
-        thrustController.ApplyFullThrust();
-    } else if (reachedTargetSpeed) {
-        SetThrusterMultiplier(step);
-        isPreviousCorrectionIncrease = false;
-
-        decreaseStep = isPreviousCorrectionIncrease;
-    } else if (!reachedTargetSpeed) {
-        SetThrusterMultiplier(1 + step);
-        isPreviousCorrectionIncrease = true;
-
-        decreaseStep = !isPreviousCorrectionIncrease;
-    }
-
-    if (decreaseStep) {
-        step = Math.Max(step * 0.75, minStep);
-    }
+    return requiredThrust;
 }
 
-void SetThrusterMultiplier(double multiplier) {
-    WriteLine($"Apply thrust multiplier {multiplier}");
-    thrusters.ForEach(t => t.SetValueFloat("Override", t.CurrentThrust * (float)multiplier));
+void ApplyThrust() {
+    var reachedTargetSpeed = speed >= 0.99 * targetSpeed;
+
+    if (reachedTopSpeedOnce && reachedTargetSpeed) {
+        var requiredThrust = CalculateRequiredThrust();
+        thrustController.ApplyThrust(requiredThrust);
+    } else {
+        thrustController.ApplyFullThrust();
+    }
 }
 
 List<T> GetBlocksInGroup<T>(string groupName) where T : class {
