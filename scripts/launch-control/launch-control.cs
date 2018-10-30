@@ -229,7 +229,7 @@ class ThrustController {
         double percentagePerThruster = N / availableThrust;
 
         this.thrusters.ForEach(t => {
-            var thrustToApply = Math.Min(t.MaxThrust * percentagePerThruster, N);
+            var thrustToApply = t.MaxThrust * percentagePerThruster;
             t.SetValueFloat("Override", (float)thrustToApply);
             N -= thrustToApply;
         });
