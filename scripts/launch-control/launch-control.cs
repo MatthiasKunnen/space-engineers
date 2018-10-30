@@ -133,10 +133,9 @@ void ClearOutput() {
 
 double CalculateRequiredThrust() {
     var mass = controlBlock.CalculateShipMass().TotalMass;
-    var gravitationalAcceleration = gravityStrength / 10 * 9.81;
-    var requiredThrust = mass * gravitationalAcceleration;
+    var requiredThrust = mass * gravityStrength;
     WriteLine($"Mass {mass} kg");
-    WriteLine($"Gravity {Math.Round(gravitationalAcceleration)} m/s²");
+    WriteLine($"Gravity {Math.Round(gravityStrength)} m/s²");
     WriteLine($"Thrust required: {Math.Round(requiredThrust)} N");
 
     return requiredThrust;
