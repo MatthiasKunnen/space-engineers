@@ -13,6 +13,8 @@ string ascentThrustersGroup = "Thrusters UP"; // Group with liftoff thrusters
 string referenceBlock = "Remote Control - Reference";
 string lcdDisplay = "Launch control LCD"; // Optional LCD display with basic information.
 
+
+double marginOfErrorThrust = 1.01;
 double targetSpeed = 250;
 double speed, angle;
 double gravityStrength;
@@ -143,7 +145,7 @@ void ApplyThrust() {
 
     if (reachedTopSpeedOnce && reachedTargetSpeed) {
         var requiredThrust = CalculateRequiredThrust();
-        thrustController.ApplyThrust(requiredThrust);
+        thrustController.ApplyThrust(requiredThrust * marginOfErrorThrust);
     } else {
         thrustController.ApplyFullThrust();
     }
