@@ -46,6 +46,12 @@ void Main(string args = "START") {
         lcd.WritePublicText(""); // Clear LCD
     }
 
+    if (controlBlock == null) {
+        WriteLine("No control block found on grid.");
+        WriteLine("Terminating script.");
+        return;
+    }
+
     thrusters = GetBlocksInGroup<IMyThrust>(ascentThrustersGroup);
     thrustController = new ThrustController(thrusters);
     gyros = GetBlocksOfType<IMyGyro>();
@@ -58,12 +64,6 @@ void Main(string args = "START") {
 
     if (gravityStrength != 0) {
         lastObservedGravity = gravity;
-    }
-
-    if (controlBlock == null) {
-        WriteLine("No control block found on grid.");
-        WriteLine("Terminating script.");
-        return;
     }
 
     if (thrusters == null || thrusters.Count == 0) {
