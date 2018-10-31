@@ -11,7 +11,7 @@ Quick setup:
 
 string ascentThrustersGroup = "Thrusters UP"; // Group with liftoff thrusters
 string referenceBlock = "Remote Control - Reference";
-string lcdDisplay = "Launch control LCD Panel"; // Optional LCD display with basic information.
+string lcdDisplay = "Launch control LCD"; // Optional LCD display with basic information.
 
 double targetSpeed = 250;
 double speed, angle;
@@ -29,11 +29,11 @@ List<IMyGyro> gyros;
 ThrustController thrustController;
 List<IMyThrust> thrusters;
 IMyShipController controlBlock;
-IMyTextPanel lcd;
+List<IMyTextPanel> lcds;
 
 void Main(string args = "START") {
     controlBlock = GridTerminalSystem.GetBlockWithName(referenceBlock) as IMyShipController;
-    lcd = GridTerminalSystem.GetBlockWithName(lcdDisplay) as IMyTextPanel;
+    lcds = SearchBlocksWithName<IMyTextPanel>(lcdDisplay);
 
     if (args == "START") {
         Runtime.UpdateFrequency = UpdateFrequency.Update10;
@@ -41,10 +41,10 @@ void Main(string args = "START") {
         turnAndBurn = null;
     }
 
-    if (lcd != null) {
+    lcds.ForEach(lcd => {
         lcd.WritePublicTitle("Launch control");
         lcd.WritePublicText(""); // Clear LCD
-    }
+    });
 
     if (controlBlock == null) {
         WriteLine("No control block found on grid.");
@@ -118,17 +118,17 @@ void Main(string args = "START") {
 /// </summary>
 void WriteLine(params string[] input) {
     var line = String.Join("\n", input) + "\n";
-    if (lcd != null) {
+    lcds.ForEach(lcd => {
         lcd.WritePublicText(line, true);
-    }
+    });
 
     Echo(line);
 }
 
 void ClearOutput() {
-    if (lcd != null) {
+    lcds.ForEach(lcd => {
         lcd.WritePublicText("");
-    }
+    });
 }
 
 double CalculateRequiredThrust() {
@@ -177,6 +177,18 @@ List<T> GetBlocksOfType<T>() where T : class {
     var result = new List<T>();
     var blocks = new List<IMyTerminalBlock>();
     GridTerminalSystem.GetBlocksOfType<T>(blocks);
+
+    for(var i = 0; i < blocks.Count; i++) {
+        result.Add((T)blocks[i]);
+    }
+
+    return result;
+}
+
+List<T> SearchBlocksWithName<T>(string name) where T : class {
+    var result = new List<T>();
+    var blocks = new List<IMyTerminalBlock>();
+    GridTerminalSystem.SearchBlocksOfName(name, blocks);
 
     for(var i = 0; i < blocks.Count; i++) {
         result.Add((T)blocks[i]);
