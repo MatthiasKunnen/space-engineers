@@ -240,21 +240,21 @@ class ThrustController {
 
         this.thrusters.ForEach(t => {
             var thrustToApply = t.MaxThrust * percentagePerThruster;
-            t.SetValueFloat("Override", (float)thrustToApply);
+            t.ThrustOverride = (float)thrustToApply;
             N -= thrustToApply;
         });
 
         // Correct rounding errors
         var thruster = this.thrusters[0];
-        thruster.SetValueFloat("Override", thruster.ThrustOverride + (float)N);
+        thruster.ThrustOverride += (float)N;
     }
 
     public void ApplyFullThrust() {
-        thrusters.ForEach(t => t.SetValueFloat("Override", t.MaxThrust));
+        thrusters.ForEach(t => t.ThrustOverride = t.MaxThrust);
     }
 
     public void Stop() {
-        thrusters.ForEach(t => t.SetValueFloat("Override", 0));
+        thrusters.ForEach(t => t.ThrustOverride = 0);
     }
 }
 
@@ -365,9 +365,9 @@ partial class GyroController: MyGridProgram {
             gyro.GetActionWithName("OnOff_On").Apply(gyro);
             if (gyro.GyroOverride) {
                 gyro.GetActionWithName("Override").Apply(gyro);
-                gyro.SetValueFloat("Pitch", 0);
-                gyro.SetValueFloat("Yaw", 0);
-                gyro.SetValueFloat("Roll", 0);
+                gyro.Pitch = 0;
+                gyro.Yaw = 0;
+                gyro.Roll = 0;
             }
         });
     }
