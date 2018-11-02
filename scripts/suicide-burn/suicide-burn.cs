@@ -130,9 +130,11 @@ bool autopilot = false; //do not change this, it's not a setting
 bool AutoFallUsed = false;
 bool[] TriggeredTimers = new bool[] {false, false, false};
 Vector3D oldVelocity3D = new Vector3D(0,0,0);
-public void Main(string input){
 
-    if (input == "start"){autopilot = true;}
+public void Main(string input) {
+    if (input == "start") {
+        autopilot = true;
+    }
 
     IMyShipController cockpit = (IMyShipController)get_block(ShipControllerName);
     IMyTerminalBlock origin = get_block(ShipControllerName);
@@ -150,23 +152,23 @@ public void Main(string input){
     try {SuicideBurnTimer = get_block(onSuicideBurnPrefix);} catch {SuicideBurnTimer = null;}
     try {DeactivationTimer = get_block(onLandingPrefix);} catch {DeactivationTimer = null;}
 
-    if (!InsideNaturalGravity){
-        if(autopilot){
+    if (!InsideNaturalGravity) {
+        if (autopilot) {
             Echo("Waiting for entering natural gravity");
-            if (input == "stop"){
+            if (input == "stop") {
                 autopilot = false;
                 Echo("Autopilot deactivated (manually)");
             }
         }
         return;
     } else {
-        if (autopilot){
-            if ((!TriggeredTimers[0]) && (GravTimer != null)){
+        if (autopilot) {
+            if ((!TriggeredTimers[0]) && (GravTimer != null)) {
                 GravTimer.ApplyAction("TriggerNow");
                 TriggeredTimers[0] = true;
             }
-            if (AutoFall){
-                if (!AutoFallUsed){
+            if (AutoFall) {
+                if (!AutoFallUsed) {
                     input = "fall";
                     AutoFallUsed = true;
                 }
@@ -226,46 +228,47 @@ public void Main(string input){
         }
     }
 
-    //------THR CONTROLLER--------
-    if (autopilot){
-        if (input == "fall"){ //This is a workaround to a game bug (ship speed greater than speed limit when free falling in natural gravity)
-                               //Pros: your ship will not crash. Cons: you will waste a tiny amount of hydrogen.
+    if (autopilot) {
+        if (input == "fall") {
+            // This is a workaround to a game bug (ship speed greater than speed limit when free falling in natural gravity)
+            // Pros: your ship will not crash. Cons: you will waste a tiny amount of hydrogen.
             ((IMyThrust)h_thrs[0]).ThrustOverride = 1F;
         }
 
-        if (altitude <= (brakeAltitude + AltitudeMargin)){
             //BRAKE!!!
+        if (altitude <= (brakeAltitude + AltitudeMargin)) {
             for (int i=0; i < h_thrs.Count; i++) {
-                if(IsHydrogenThrusterWorking(h_thrs[i])){
+                if (IsHydrogenThrusterWorking(h_thrs[i])) {
                     ((IMyThrust)h_thrs[i]).ThrustOverridePercentage = 1F;
                 }
             }
-            if ((!TriggeredTimers[1]) && (SuicideBurnTimer != null)){
+            if ((!TriggeredTimers[1]) && (SuicideBurnTimer != null)) {
                 SuicideBurnTimer.ApplyAction("TriggerNow");
                 TriggeredTimers[1] = true;
             }
         }
     }
 
-    if (enableAltitudeTrigger && autopilot) AltitudeTrigger(altitude);
+    if (enableAltitudeTrigger && autopilot) {
+        AltitudeTrigger(altitude);
+    }
 
-    //------SCRIPT AUTOMATIC DEACTIVATION-------
-    if (autopilot){
-        if (altitude <= (StopAltitude + DisableMargin + AltitudeMargin)){
-            if (vel < StopSpeed){
+    if (autopilot) {
+        if (altitude <= (StopAltitude + DisableMargin + AltitudeMargin)) {
+            if (vel < StopSpeed) {
                 deactivate(AdvancedGyros, h_thrs);
                 Echo("Autopilot deactivated (automatically)");
-                if ((!TriggeredTimers[2]) && (DeactivationTimer != null)){
+                if ((!TriggeredTimers[2]) && (DeactivationTimer != null)) {
                     DeactivationTimer.ApplyAction("TriggerNow");
                     TriggeredTimers[2] = true;
                 }
             }
 
-            if(SmartDeactivation){
-                if ((oldVelocity3D.X*velocity3D.X < 0)||(oldVelocity3D.Y*velocity3D.Y < 0)||(oldVelocity3D.Z*velocity3D.Z < 0)){
+            if (SmartDeactivation) {
+                if (oldVelocity3D.X * velocity3D.X < 0 || oldVelocity3D.Y * velocity3D.Y < 0 || oldVelocity3D.Z * velocity3D.Z < 0) {
                     deactivate(AdvancedGyros, h_thrs);
                     Echo("Autopilot deactivated (automatically)");
-                    if ((!TriggeredTimers[2]) && (DeactivationTimer != null)){
+                    if ((!TriggeredTimers[2]) && (DeactivationTimer != null)) {
                         DeactivationTimer.ApplyAction("TriggerNow");
                         TriggeredTimers[2] = true;
                     }
@@ -275,33 +278,31 @@ public void Main(string input){
     }
     oldVelocity3D = velocity3D;
     //------SCRIPT MANUAL DEACTIVATION----------
-    if (input == "stop"){
+    if (input == "stop") {
         deactivate(AdvancedGyros, h_thrs);
         Echo("Autopilot deactivated (manually)");
     }
 }
 
-void AltitudeTrigger(double A){
-    //---- BLOCK NAME TAG TRIGGER ----
+void AltitudeTrigger(double A) {
     List<IMyTerminalBlock> AllTimers = new List<IMyTerminalBlock>();
     GridTerminalSystem.GetBlocksOfType<IMyTimerBlock>(AllTimers);
     foreach (IMyTimerBlock t in AllTimers) {
-        if (t.CustomName.StartsWith("[AT:")){
+        if (t.CustomName.StartsWith("[AT:")) {
             string name = t.CustomName;
             string tag = name.Split(']')[0];
             string[] args = tag.Split(':');
 
-            if (Math.Abs(A - Convert.ToDouble(args[1])) < altitudeTriggerTolerance){
-                if(2 < args.Length){
+                if (2 < args.Length) {
                     t.ApplyAction(args[2]);
                 } else {
                     t.ApplyAction("TriggerNow");
                 }
+            if (Math.Abs(A - Convert.ToDouble(args[1])) < altitudeTriggerTolerance) {
                 t.CustomName = t.CustomName.Replace("[AT:", "[ATE:");
             }
         }
     }
-    //---- PANEL TRIGGER -----
 }
 
 double calcBrakeDistance(double G_ms, double actual_mass, double altitude, double maxthrust, double speed){
@@ -316,30 +317,31 @@ double calcBrakeDistance(double G_ms, double actual_mass, double altitude, doubl
     return brakeDistance;
 }
 
-double calcMaxThrust(List<IMyTerminalBlock> h_thrs){
+double calcMaxThrust(List<IMyTerminalBlock> h_thrs) {
     double max = 0;
-    foreach (IMyTerminalBlock thr in h_thrs){
-        if(IsHydrogenThrusterWorking(thr)){
+
+    foreach (IMyTerminalBlock thr in h_thrs) {
+        if (IsHydrogenThrusterWorking(thr)) {
             IMyThrust curr_thr = (IMyThrust)thr;
             max += curr_thr.MaxThrust;
         }
     }
+
     return max;
 }
 
-private void deactivate(List<AdvGyro> AdvancedGyros, List<IMyTerminalBlock> h_thrs){
-
+private void deactivate(List<AdvGyro> AdvancedGyros, List<IMyTerminalBlock> h_thrs) {
     List<IMyTerminalBlock> AllTimers = new List<IMyTerminalBlock>();
     GridTerminalSystem.GetBlocksOfType<IMyTimerBlock>(AllTimers);
     foreach (IMyTimerBlock t in AllTimers) {
-        if (t.CustomName.StartsWith("[ATE:")){
+        if (t.CustomName.StartsWith("[ATE:")) {
             t.CustomName = t.CustomName.Replace("[ATE:", "[AT:");
         }
     }
 
     AdvGyro.FreeAllGyros(AdvancedGyros);
 
-    for (int i=0; i < h_thrs.Count; i++) {
+    for (int i = 0; i < h_thrs.Count; i++) {
         ((IMyThrust)h_thrs[i]).ThrustOverridePercentage = 0F;
     }
 
@@ -352,46 +354,38 @@ private void deactivate(List<AdvGyro> AdvancedGyros, List<IMyTerminalBlock> h_th
 //-----------------------------AdvGyro class -----------------------------------------------
 
 
-class AdvGyro
-{
-    public IMyTerminalBlock Gyro
-    {
+class AdvGyro {
+    public IMyTerminalBlock Gyro {
         get;
         private set;
     }
 
-    public float Pitch
-    {
+    public float Pitch {
         get{ return Gyro.GetValueFloat(strPitch) * intPitch; }
         set{ Gyro.SetValueFloat(strPitch, value * intPitch); }
     }
 
-    public float Yaw
-    {
+    public float Yaw {
         get{ return Gyro.GetValueFloat(strYaw) * intYaw; }
         set{ Gyro.SetValueFloat(strYaw, value * intYaw); }
     }
 
-    public float Roll
-    {
+    public float Roll {
         get{ return Gyro.GetValueFloat(strRoll) * intRoll; }
         set{ Gyro.SetValueFloat(strRoll, value * intRoll); }
     }
 
-    public float Power
-    {
+    public float Power {
         get{ return Gyro.GetValueFloat("Power"); }
         set{ Gyro.SetValueFloat("Power", value); }
     }
 
-    public bool Override
-    {
+    public bool Override {
         get{ return Gyro.GetValue<bool>("Override"); }
         set{ Gyro.SetValue<bool>("Override", value); }
     }
 
-    public bool Enabled
-    {
+    public bool Enabled {
         get{ return Gyro.GetValue<bool>("OnOff"); }
         set{ Gyro.SetValue<bool>("OnOff", value); }
     }
@@ -403,67 +397,70 @@ class AdvGyro
     private string strRoll;
     private int intRoll;
 
-    public AdvGyro(IMyTerminalBlock MyGyro, IMyTerminalBlock ForwardCockpit)
-    {
+    public AdvGyro(IMyTerminalBlock MyGyro, IMyTerminalBlock ForwardCockpit) {
         Gyro = MyGyro;
         Orientate(ForwardCockpit);
     }
 
-    public void Free()
-    {
+    public void Free() {
         this.Pitch = 0;
         this.Yaw = 0;
         this.Roll = 0;
         this.Override = false;
     }
 
-    public static List<AdvGyro> GetAllGyros(IMyGridTerminalSystem Term, IMyTerminalBlock ForwardCockpit, bool OnlyOwnGrid = true)
-    {
+    public static List<AdvGyro> GetAllGyros(IMyGridTerminalSystem Term, IMyTerminalBlock ForwardCockpit, bool OnlyOwnGrid = true)  {
         List<IMyTerminalBlock> AllGyros = new List<IMyTerminalBlock>();
         Term.GetBlocksOfType<IMyGyro>(AllGyros);
-        if (OnlyOwnGrid)
+        if (OnlyOwnGrid) {
             AllGyros.RemoveAll(x => x.CubeGrid != ForwardCockpit.CubeGrid);
+        }
 
         List<AdvGyro> AdvGyros = new List<AdvGyro>();
-        foreach (IMyTerminalBlock _Gyro in AllGyros)
-        {
-            AdvGyro NewAdvGyro = new AdvGyro(_Gyro, ForwardCockpit);
+        foreach (IMyTerminalBlock g in AllGyros) {
+            AdvGyro NewAdvGyro = new AdvGyro(g, ForwardCockpit);
             AdvGyros.Add(NewAdvGyro);
         }
+
         return AdvGyros;
     }
 
-    public static void SetAllGyros(List<AdvGyro> AllGyros, bool AutoOverride = true, float? NewPitch = null, float? NewYaw = null, float? NewRoll = null)
-    {
-        foreach(AdvGyro _Gyro in AllGyros)
-        {
-            if (NewPitch.HasValue)
-                _Gyro.Pitch = (float)NewPitch;
+    public static void SetAllGyros(
+        List<AdvGyro> AllGyros,
+        bool AutoOverride = true,
+        float? NewPitch = null,
+        float? NewYaw = null,
+        float? NewRoll = null
+    ) {
+        foreach(AdvGyro g in AllGyros) {
+            if (NewPitch.HasValue) {
+                g.Pitch = (float)NewPitch;
+            }
 
-            if (NewYaw.HasValue)
-                _Gyro.Yaw = (float)NewYaw;
+            if (NewYaw.HasValue) {
+                g.Yaw = (float)NewYaw;
+            }
 
-            if (NewRoll.HasValue)
-                _Gyro.Roll = (float)NewRoll;
+            if (NewRoll.HasValue) {
+                g.Roll = (float)NewRoll;
+            }
 
-            if (AutoOverride)
-            {
-                if(_Gyro.Override == false)
-                    _Gyro.Override = true;
+            if (AutoOverride) {
+                if (g.Override == false) {
+                    g.Override = true;
+                }
             }
         }
     }
 
-    public static void FreeAllGyros(List<AdvGyro> AllGyros)
-    {
-        foreach(AdvGyro _Gyro in AllGyros)
-        {
-            _Gyro.Free();
+    public static void FreeAllGyros(List<AdvGyro> AllGyros) {
+        foreach(AdvGyro g in AllGyros) {
+            g.Free();
         }
     }
 
-    private void Orientate(IMyTerminalBlock ReferencePoint)
-    { // Big thanks to Skleroz for this awesome stuff.
+    // Big thanks to Skleroz for this awesome stuff.
+    private void Orientate(IMyTerminalBlock ReferencePoint) {
         Vector3 V3For = Base6Directions.GetVector(ReferencePoint.Orientation.TransformDirection(Base6Directions.Direction.Forward));
         Vector3 V3Up = Base6Directions.GetVector(ReferencePoint.Orientation.TransformDirection(Base6Directions.Direction.Up));
         V3For.Normalize();
@@ -474,8 +471,8 @@ class AdvGyro
         Base6Directions.Direction GyroUp = Gyro.Orientation.TransformDirectionInverse(B6DTop);
         Base6Directions.Direction GyroForward = Gyro.Orientation.TransformDirectionInverse(B6DFor);
         Base6Directions.Direction GyroLeft = Gyro.Orientation.TransformDirectionInverse(B6DLeft);
-        switch (GyroUp)
-        {
+
+        switch (GyroUp) {
             case Base6Directions.Direction.Up:
                 strYaw = "Yaw";
                 intYaw = 1;
@@ -501,8 +498,8 @@ class AdvGyro
                 intYaw = -1;
                 break;
         }
-        switch (GyroLeft)
-        {
+
+        switch (GyroLeft) {
             case Base6Directions.Direction.Up:
                 strPitch = "Yaw";
                 intPitch = 1;
@@ -528,8 +525,8 @@ class AdvGyro
                 intPitch = -1;
                 break;
         }
-        switch (GyroForward)
-        {
+
+        switch (GyroForward) {
             case Base6Directions.Direction.Up:
                 strRoll = "Yaw";
                 intRoll = -1;
@@ -560,14 +557,11 @@ class AdvGyro
 
 //------------------------------------Get Blocks------------------------------------------
 
-IMyTerminalBlock get_block(string name)
-{
+IMyTerminalBlock get_block(string name) {
     List<IMyTerminalBlock> blks = new List<IMyTerminalBlock>{};
     GridTerminalSystem.GetBlocks(blks);
-    for (int i = 0; i < blks.Count; i++)
-    {
-        if (blks[i].CustomName.StartsWith(name))
-        {
+    for (int i = 0; i < blks.Count; i++) {
+        if (blks[i].CustomName.StartsWith(name)) {
             return blks[i];
         }
     }
@@ -581,10 +575,11 @@ List<IMyTerminalBlock> GetBlockGroupsWithName(string strGroupName) {
     var blockGroup = allGroups.Find(g => g.Name.Equals(strGroupName));
     List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
 
-    if (blockGroup != null){
+    if (blockGroup != null) {
         blockGroup.GetBlocks(blocks);
         return blocks;
     }
+
     throw new Exception(" " + strGroupName + " Not Found");
 }
 
