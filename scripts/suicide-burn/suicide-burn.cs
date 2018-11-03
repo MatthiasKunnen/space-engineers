@@ -100,22 +100,9 @@ bool SmartDeactivation = true;
 // experiment different values. if the ship wiggles to much lower this value.
 double RotationSpeedLimit = 0.8;
 
-// Timer block trigger feature Prefixes
-// Prefix of the timer block to trigger when ship enters natural gravity
-string OnGravityEntrancePrefix = "[ON-GRAV]";
-// Prefix of the timer block to trigger when ship starts the suicide burn
-string OnSuicideBurnPrefix = "[ON-BURN]";
-// Prefix of the timer block to trigger when the script is automatically
-// deactivated (e.g. when ship lands or reach the target StopAltitude)
-// NOTE: The timers will be triggered only once per landing, if your timer triggers multiple times one reason
-// could be that you setup the timer loop that runs the program to run with argument start, you SHOULD NOT
-// do this, the argument start SHOULD be used only once per landing.
-string OnLandingPrefix = "[ON-LAND]";
-
 // Main script body
 bool Autopilot = false;
 bool AutoFallUsed = false;
-bool[] TriggeredTimers = new bool[]{false, false, false};
 Vector3D OldVelocity3D = new Vector3D(0, 0, 0);
 
 public void Main(string input) {
@@ -130,14 +117,6 @@ public void Main(string input) {
 
     Vector3D velocity3D = controlBlock.GetShipVelocities().LinearVelocity;
 
-    IMyTerminalBlock GravTimer;
-    IMyTerminalBlock SuicideBurnTimer;
-    IMyTerminalBlock DeactivationTimer;
-
-    GravTimer = GridTerminalSystem.GetBlockWithName(OnGravityEntrancePrefix);
-    SuicideBurnTimer = GridTerminalSystem.GetBlockWithName(OnSuicideBurnPrefix);
-    DeactivationTimer = GridTerminalSystem.GetBlockWithName(OnLandingPrefix);
-
     if (!InsideNaturalGravity) {
         if (Autopilot) {
             Echo("Waiting for entering natural gravity");
@@ -148,16 +127,10 @@ public void Main(string input) {
         }
         return;
     } else {
-        if (Autopilot) {
-            if ((!TriggeredTimers[0]) && (GravTimer != null)) {
-                GravTimer.ApplyAction("TriggerNow");
-                TriggeredTimers[0] = true;
-            }
-            if (AutoFall) {
-                if (!AutoFallUsed) {
-                    input = "fall";
-                    AutoFallUsed = true;
-                }
+        if (Autopilot && AutoFall) {
+            if (!AutoFallUsed) {
+                input = "fall";
+                AutoFallUsed = true;
             }
         }
     }
@@ -213,30 +186,18 @@ public void Main(string input) {
         if (altitude <= (brakeAltitude + AltitudeMargin)) {
             // BRAKE!!!
             thrustController.ApplyFullThrust(); // Maybe just enable dampeners
-            if ((!TriggeredTimers[1]) && (SuicideBurnTimer != null)) {
-                SuicideBurnTimer.ApplyAction("TriggerNow");
-                TriggeredTimers[1] = true;
-            }
         }
 
         if (altitude <= (StopAltitude + DisableMargin + AltitudeMargin)) {
             if (velocity < StopSpeed) {
                 deactivate(AdvancedGyros);
                 Echo("Autopilot deactivated (automatically)");
-                if ((!TriggeredTimers[2]) && (DeactivationTimer != null)) {
-                    DeactivationTimer.ApplyAction("TriggerNow");
-                    TriggeredTimers[2] = true;
-                }
             }
 
             if (SmartDeactivation) {
                 if (OldVelocity3D.X * velocity3D.X < 0 || OldVelocity3D.Y * velocity3D.Y < 0 || OldVelocity3D.Z * velocity3D.Z < 0) {
                     deactivate(AdvancedGyros);
                     Echo("Autopilot deactivated (automatically)");
-                    if ((!TriggeredTimers[2]) && (DeactivationTimer != null)) {
-                        DeactivationTimer.ApplyAction("TriggerNow");
-                        TriggeredTimers[2] = true;
-                    }
                 }
             }
         }
@@ -261,19 +222,10 @@ double CalculateBrakeDistance(double gravityStrength, double actualMass, double 
 }
 
 private void deactivate(List<AdvGyro> AdvancedGyros) {
-    List<IMyTerminalBlock> AllTimers = new List<IMyTerminalBlock>();
-    GridTerminalSystem.GetBlocksOfType<IMyTimerBlock>(AllTimers);
-    foreach (IMyTimerBlock t in AllTimers) {
-        if (t.CustomName.StartsWith("[ATE:")) {
-            t.CustomName = t.CustomName.Replace("[ATE:", "[AT:");
-        }
-    }
-
     AdvGyro.FreeAllGyros(AdvancedGyros);
 
     Autopilot = false;
     AutoFallUsed = false;
-    TriggeredTimers[0] = false;TriggeredTimers[1] = false;TriggeredTimers[2] = false;
 }
 
 class ThrustController {
