@@ -128,7 +128,7 @@ public void Main(string input) {
         Autopilot = true;
     }
 
-    IMyShipController controlBlock = (IMyShipController)GetBlock(ShipControllerName);
+    IMyShipController controlBlock = (IMyShipController)GridTerminalSystem.GetBlockWithName(ShipControllerName);
 
     double altitude = 0;
     bool InsideNaturalGravity = controlBlock.TryGetPlanetElevation(MyPlanetElevation.Surface, out altitude);
@@ -139,9 +139,9 @@ public void Main(string input) {
     IMyTerminalBlock SuicideBurnTimer;
     IMyTerminalBlock DeactivationTimer;
 
-    try {GravTimer = GetBlock(OnGravityEntrancePrefix);} catch {GravTimer = null;}
-    try {SuicideBurnTimer = GetBlock(OnSuicideBurnPrefix);} catch {SuicideBurnTimer = null;}
-    try {DeactivationTimer = GetBlock(OnLandingPrefix);} catch {DeactivationTimer = null;}
+    GravTimer = GridTerminalSystem.GetBlockWithName(OnGravityEntrancePrefix);
+    SuicideBurnTimer = GridTerminalSystem.GetBlockWithName(OnSuicideBurnPrefix);
+    DeactivationTimer = GridTerminalSystem.GetBlockWithName(OnLandingPrefix);
 
     if (!InsideNaturalGravity) {
         if (Autopilot) {
@@ -167,10 +167,7 @@ public void Main(string input) {
         }
     }
 
-    List<IMyTerminalBlock> thrusters = new List<IMyTerminalBlock>();
-    try {thrusters = GetBlockGroupsWithName(HydrogenThrustersGroupName);}
-    catch (System.Exception)
-    {Echo("Thrusters group not found"); return;}
+    List<IMyThrust> thrusters = GetBlocksInGroup<IMyThrust>(HydrogenThrustersGroupName);
 
     List<AdvGyro> AdvancedGyros = new List<AdvGyro>();
     AdvancedGyros = AdvGyro.GetAllGyros(GridTerminalSystem, controlBlock, true);
@@ -534,32 +531,25 @@ class AdvGyro {
     }
 }
 
-//------------------------------------Get Blocks------------------------------------------
+List<T> GetBlocksInGroup<T>(string groupName) where T : class {
+    var groups = new List<IMyBlockGroup>();
+    GridTerminalSystem.GetBlockGroups(groups);
 
-IMyTerminalBlock GetBlock(string name) {
-    List<IMyTerminalBlock> blks = new List<IMyTerminalBlock>{};
-    GridTerminalSystem.GetBlocks(blks);
-    for (int i = 0; i < blks.Count; i++) {
-        if (blks[i].CustomName.StartsWith(name)) {
-            return blks[i];
+    for (int i = 0; i < groups.Count; i++) {
+        if (groups[i].Name == groupName) {
+            var groupBlocks = new List<IMyTerminalBlock>();
+            var result = new List<T>();
+
+            groups[i].GetBlocks(groupBlocks);
+            for (int t = 0; t < groupBlocks.Count; t++) {
+                result.Add(groupBlocks[t] as T);
+            }
+
+            return result;
         }
     }
-    throw new Exception(name + " Not Found");
-}
 
-List<IMyTerminalBlock> GetBlockGroupsWithName(string groupName) {
-    List<IMyBlockGroup> allGroups = new List<IMyBlockGroup>();
-    GridTerminalSystem.GetBlockGroups(allGroups);
-
-    var blockGroup = allGroups.Find(g => g.Name.Equals(groupName));
-    List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
-
-    if (blockGroup != null) {
-        blockGroup.GetBlocks(blocks);
-        return blocks;
-    }
-
-    throw new Exception(" " + groupName + " Not Found");
+    return null;
 }
 
 void GetDirectionTo(
