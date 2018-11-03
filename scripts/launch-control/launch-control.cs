@@ -9,16 +9,18 @@ Quick setup:
 
 ******************************************************************************/
 
-string ascentThrustersGroup = "Thrusters UP"; // Group with liftoff thrusters
-string referenceBlock = "Remote Control - Reference";
+string thrustersGroupName = "Thrusters UP"; // Group with liftoff thrusters
+string referenceBlockName = "Remote Control - Reference";
 string lcdSearchName = "LCD Launch control"; // Optional LCD with basic information.
 
 
 double marginOfErrorThrust = 1.01;
-double targetSpeed = 250;
+double targetSpeed = 100;
 double speed, angle;
 double gravityStrength;
-double gravityTreshold = 0; // Specifies at how many gyro script will stop, 0g by default.
+
+// Specifies at how many m/s² the turn and burn will be initiated.
+double gravityTreshold = 0;
 
 bool reachedTopSpeedOnce;
 
@@ -34,7 +36,16 @@ IMyShipController controlBlock;
 List<IMyTextPanel> lcds;
 
 void Main(string args = "START") {
-    controlBlock = GridTerminalSystem.GetBlockWithName(referenceBlock) as IMyShipController;
+    Config config = new Config(Me.CustomData);
+
+    config.Set(ref thrustersGroupName, "thrustersGroupName");
+    config.Set(ref referenceBlockName, "referenceBlockName");
+    config.Set(ref lcdSearchName, "lcdSearchName");
+    config.Set<double>(ref marginOfErrorThrust, "marginOfErrorThrust");
+    config.Set<double>(ref targetSpeed, "targetSpeed");
+    config.Set<double>(ref gravityTreshold, "gravityTreshold");
+
+    controlBlock = GridTerminalSystem.GetBlockWithName(referenceBlockName) as IMyShipController;
     lcds = SearchBlocksWithName<IMyTextPanel>(lcdSearchName);
 
     if (args == "START") {
@@ -54,7 +65,7 @@ void Main(string args = "START") {
         return;
     }
 
-    thrusters = GetBlocksInGroup<IMyThrust>(ascentThrustersGroup);
+    thrusters = GetBlocksInGroup<IMyThrust>(thrustersGroupName);
     thrustController = new ThrustController(thrusters);
     gyros = GetBlocksOfType<IMyGyro>();
     gyroController = new GyroController(controlBlock, gyros, Base6Directions.Direction.Down, 0.8);
@@ -69,7 +80,7 @@ void Main(string args = "START") {
     }
 
     if (thrusters == null || thrusters.Count == 0) {
-        WriteLine($"No thrusters found in \"{ascentThrustersGroup}\" group.");
+        WriteLine($"No thrusters found in \"{thrustersGroupName}\" group.");
         WriteLine("Terminating script.");
         return;
     }
@@ -199,6 +210,37 @@ List<T> SearchBlocksWithName<T>(string name) where T : class {
 void SetDampeners(bool enabled) {
     if (controlBlock.DampenersOverride != enabled) {
         controlBlock.GetActionWithName("DampenersOverride").Apply(controlBlock);
+    }
+}
+
+class Config {
+    IDictionary<string, string> dictionary;
+
+    public Config(string configData) {
+        this.dictionary = configData.Split(new [] {'\r', '\n'}, StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => part.Split('='))
+            .ToDictionary(split => split[0], split => split[1]);
+    }
+
+    public T? Get<T>(string key, T? defaultValue = null) where T : struct {
+        string value;
+        return dictionary.TryGetValue(key, out value)
+            ? (T)Convert.ChangeType(value, typeof(T))
+            : defaultValue;
+    }
+
+    public string Get(string key, string defaultValue = null) {
+        string value;
+        return dictionary.TryGetValue(key, out value) ? value : defaultValue;
+    }
+
+    // Set if key exists
+    public void Set<T>(ref T var, string key) where T : struct {
+        var = this.Get<T>(key) ?? var;
+    }
+
+    public void Set(ref string var, string key) {
+        var = this.Get(key) ?? var;
     }
 }
 
