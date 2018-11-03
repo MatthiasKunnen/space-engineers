@@ -362,7 +362,6 @@ partial class GyroController: MyGridProgram {
     /// </summary>
     public void Stop() {
         gyros.ForEach(gyro => {
-            gyro.GetActionWithName("OnOff_On").Apply(gyro);
             if (gyro.GyroOverride) {
                 gyro.GetActionWithName("Override").Apply(gyro);
                 gyro.Pitch = 0;
