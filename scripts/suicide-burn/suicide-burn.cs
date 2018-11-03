@@ -128,13 +128,12 @@ public void Main(string input) {
         Autopilot = true;
     }
 
-    IMyShipController cockpit = (IMyShipController)GetBlock(ShipControllerName);
-    IMyTerminalBlock origin = GetBlock(ShipControllerName);
+    IMyShipController controlBlock = (IMyShipController)GetBlock(ShipControllerName);
 
     double altitude = 0;
-    bool InsideNaturalGravity = cockpit.TryGetPlanetElevation(MyPlanetElevation.Surface, out altitude);
+    bool InsideNaturalGravity = controlBlock.TryGetPlanetElevation(MyPlanetElevation.Surface, out altitude);
 
-    Vector3D velocity3D = cockpit.GetShipVelocities().LinearVelocity;
+    Vector3D velocity3D = controlBlock.GetShipVelocities().LinearVelocity;
 
     IMyTerminalBlock GravTimer;
     IMyTerminalBlock SuicideBurnTimer;
@@ -174,19 +173,19 @@ public void Main(string input) {
     {Echo("Thrusters group not found"); return;}
 
     List<AdvGyro> AdvancedGyros = new List<AdvGyro>();
-    AdvancedGyros = AdvGyro.GetAllGyros(GridTerminalSystem, cockpit, true);
+    AdvancedGyros = AdvGyro.GetAllGyros(GridTerminalSystem, controlBlock, true);
 
-    Vector3D grav = cockpit.GetNaturalGravity();
-    Vector3D pos = origin.GetPosition(); // ship coords
+    Vector3D grav = controlBlock.GetNaturalGravity();
+    Vector3D pos = controlBlock.GetPosition(); // ship coords
     double gravityStrength = Math.Sqrt(Math.Pow(grav.X, 2) + Math.Pow(grav.Y, 2) + Math.Pow(grav.Z, 2)); // gravity in m/s^2
-    double totalMass = cockpit.CalculateShipMass().TotalMass; // ship total mass including cargo mass
-    double baseMass = cockpit.CalculateShipMass().BaseMass; // mass of the ship without cargo
+    double totalMass = controlBlock.CalculateShipMass().TotalMass; // ship total mass including cargo mass
+    double baseMass = controlBlock.CalculateShipMass().BaseMass; // mass of the ship without cargo
     double cargoMass = totalMass - baseMass; // mass of the cargo
     double actualMass = baseMass + (cargoMass / InventoryMultiplier); // the mass the game uses for physics calculation
     double shipWeight = actualMass * gravityStrength; // weight in newtons of the ship
-    double vel = cockpit.GetShipSpeed(); // ship velocity
+    double velocity = controlBlock.GetShipSpeed(); // ship velocity
     double maxthrust = CalculateMaxThrust(thrusters);
-    double brakeDistance = CalculateBrakeDistance(gravityStrength, actualMass, altitude, maxthrust, vel);
+    double brakeDistance = CalculateBrakeDistance(gravityStrength, actualMass, altitude, maxthrust, velocity);
     double brakeAltitude = StopAltitude + brakeDistance; // at this altitude the ship will start slowing Down
 
     if (Autopilot) {
@@ -196,15 +195,15 @@ public void Main(string input) {
         var y = Math.Floor(Target.GetDim(1)).ToString();
         var z = Math.Floor(Target.GetDim(2)).ToString();
 
-        float range = (float)((origin.GetPosition() - Target).Length());
+        float range = (float)((controlBlock.GetPosition() - Target).Length());
         float gyroPitch = 0;
         float gyroYaw = 0;
 
-        GetDirectionTo(Target, origin, ref gyroPitch, ref gyroYaw);
+        GetDirectionTo(Target, controlBlock, ref gyroPitch, ref gyroYaw);
 
         float speedMultiplier = (float)Math.Sqrt(Math.Pow(Math.Sqrt(gyroPitch * gyroPitch + gyroYaw * gyroYaw), 3)) * 0.01f;
 
-        var angularVel = cockpit.GetShipVelocities().AngularVelocity;
+        var angularVel = controlBlock.GetShipVelocities().AngularVelocity;
         var totAngVel = Math.Sqrt(angularVel.X * angularVel.X + angularVel.Y * angularVel.Y + angularVel.Z * angularVel.Z);
 
         if (totAngVel <= RotationSpeedLimit) {
@@ -241,7 +240,7 @@ public void Main(string input) {
 
     if (Autopilot) {
         if (altitude <= (StopAltitude + DisableMargin + AltitudeMargin)) {
-            if (vel < StopSpeed) {
+            if (velocity < StopSpeed) {
                 deactivate(AdvancedGyros, thrusters);
                 Echo("Autopilot deactivated (automatically)");
                 if ((!TriggeredTimers[2]) && (DeactivationTimer != null)) {
