@@ -1,16 +1,4 @@
 // Originally from https://steamcommunity.com/sharedfiles/filedetails/?id=767891298
-//DISCLAIMER: I'm not responsible for any destroyed ship if you don't setup this script correctly  :)
-
-// NEW UPDATE v1.4 FEATURES
-// - No more wiggliness during alignment thanks to a customizable rotation speed limit.
-
-// UPDATE v1.3 FEATURES
-// - You can now trigger timers at a specified altitude, more info at line 28 and 105
-
-// UPDATE v1.2 MAIN FEATURES:
-// - SmartDeactivation feature
-// - Timer triggering
-// More info in the script settings and workshop page
 
 /*How to set it up:
 1) put this script in a programmable block, check code and remember and exit
@@ -48,85 +36,89 @@ NOTE: point 1) 2) and 3) can be performed in no particular order.
 Further explanations of why a fall argument is needed can be found on the workshop page
 */
 
-//Mandatory settings (You have to modify this unless they are already set correctly)
-int InventoryMultiplier = 10; //THIS IS REALLY IMPORTANT: set this to your world's inventory multiplier setting
-                              //(REALISTIC = 1)
+// Mandatory settings (You have to modify this unless they are already set correctly)
+// THIS IS REALLY IMPORTANT: set this to your world's inventory multiplier setting
+// (REALISTIC = 1)
+int InventoryMultiplier = 10;
 
-double AltitudeMargin = 2; //SET THIS TO THE DISPLAYED ALTITUDE WHEN YOUR SHIP IS ON THE GROUND.
-                            //if your ship doesn't stop in time add some meters here, but not too much otherwise
-                            //script will stop too far from the ground and the ship will free fall on the ground.
-                            //TIP: you can set this to 0 if you plan to stop your ship away from the ground, this
-                            //value is important only when landing on the ground.
+// SET THIS TO THE DISPLAYED ALTITUDE WHEN YOUR SHIP IS ON THE GROUND.
+// if your ship doesn't stop in time add some meters here, but not too much otherwise
+// script will stop too far from the ground and the ship will free fall on the ground.
+// TIP: you can set this to 0 if you plan to stop your ship away from the ground, this
+// value is important only when landing on the ground.
+double AltitudeMargin = 0;
 
-double DisableMargin = 15; //WARNING: The behaviour of this setting has changed in the update 2, to achieve the
-                           //same results for your already existing creations you need to change this value to the
-                           //previous value minus the AltitudeMargin value.
-                           //Before the update this value had to be greater than AltitudeMargin, now it's not
-                           //needed anymore. when your ship goes below the StopAltitude plus this value and
-                           //your speed is below StopSpeed setting, the script will disable itself.
-                           //If you are using the SmartDeactivation feature, the script will disable itself only
-                           //if your ship is below the StopAltitude plus this value. More info below (line 91)
+// WARNING: The behaviour of this setting has changed in the update 2, to achieve the
+// same results for your already existing creations you need to change this value to the
+// previous value minus the AltitudeMargin value.
+// Before the update this value had to be greater than AltitudeMargin, now it's not
+// needed anymore. when your ship goes below the StopAltitude plus this value and
+// your speed is below StopSpeed setting, the script will disable itself.
+// If you are using the SmartDeactivation feature, the script will disable itself only
+// if your ship is below the StopAltitude plus this value. More info below (line 91)
+double DisableMargin = 15;
 
-//Optional settings
-string ShipControllerName = "reference"; //name of the cockpit/remote control used to get the direction of the
-                                         //ship. this block must face the the sky/space.
+// Name of the cockpit/remote control used to get the direction of the
+// ship. this block must face the the sky/space.
+string ShipControllerName = "Remote Control - Reference";
 
-string HydrogenThrustersGroupName = "THR"; //this group must contain the hydrogen thrusters that are facing the
-                                           //surface of the planet. this thrusters will be used to stop the ship
-                                           //at the last second (more or less)
+// This group must contain the hydrogen thrusters that are facing the
+// surface of the planet. this thrusters will be used to stop the ship
+// at the last second (more or less)
+string HydrogenThrustersGroupName = "h_thrs";
 
-double StopAltitude = 0; //if set to 0 the ship will stop on the surface, otherwise will stop at the altitude
-                        //specified. if you set an high value i recommended to keep inertial dampeners on
-                        //unless you want your ship destroyed.
+// If set to 0 the ship will stop on the surface, otherwise will stop at the altitude
+// specified. if you set an high value i recommended to keep inertial dampeners on
+// unless you want your ship destroyed.
+double StopAltitude = 1000;
 
-double StopSpeed = 0; //script will deactivate itself if the ships speed is below StopSpeed setting
-    //TIP: if your ship touches the ground but then goes to the sky, you may want to set a greater StopSpeed value
-    //THIS TIP APPLIES ONLY IF SmartDeactivation IS TURNED OFF, IF IT'S ON I SUGGEST TO LEAVE StopSpeed to 0
-    //IF YOU DECIDE TO TURN OFF SmartDeactivation YOU MUST SET StopSpeed TO SOMETHING ABOVE 0
-    //(i suggest a low value like 1 if your ship is big and heavy, or a value like 5 if its a small drop pod)
+// Script will deactivate itself if the ships speed is below StopSpeed setting
+// TIP: if your ship touches the ground but then goes to the sky, you may want to set a greater StopSpeed value
+// THIS TIP APPLIES ONLY IF SmartDeactivation IS TURNED OFF, IF IT'S ON I SUGGEST TO LEAVE StopSpeed to 0
+// IF YOU DECIDE TO TURN OFF SmartDeactivation YOU MUST SET StopSpeed TO SOMETHING ABOVE 0
+// (i suggest a low value like 1 if your ship is big and heavy, or a value like 5 if its a small drop pod)
+double StopSpeed = 0;
 
-bool AutoFall = true; //As soon as start command is run, script will automatically run also fall command, useful for a completely
-                       //automatic setup. (just need to use the start argument anywhere and as soon as you enter a gravity field
-                       //script will do its job automatically)
+// As soon as start command is run, script will automatically run also fall command, useful for a completely
+// automatic setup. (just need to use the start argument anywhere and as soon as you enter a gravity field
+// script will do its job automatically)
+bool AutoFall = true;
 
-bool SmartDeactivation = true;//The script will turn off its Autopilot feature as soon as the ship starts to change
-            //direction (e.g. when touches the ground). As a safety this feature works only when the ship is
-            //near the ground (e.g. when altitude is below StopAltitude + AltitudeMargin + DisableMargin)
-            //What this means in practice? Your ship will be able to land more safely on flat surfaces and sloped
-            //surfaces without the problem that sometimes happens: the ship flyies to the sky.
-            //NOTE: if your ship is big is still not recommended to land on the side of the mountains because
-            //The altitude is calculated from the point of the terrain below the center of the ship.
-            //NOTE 2: This feature is perfect for drop pods, even if you are going to land on the side of a mountain
-            //NOTE 3: This feature is recommended also for big ships because makes the landing softer.
-            //NOTE 4: If this feature is on you can set StopSpeed to 0 (i strongly suggest to do it)
+// The script will turn off its Autopilot feature as soon as the ship starts to change
+// direction (e.g. when touches the ground). As a safety this feature works only when the ship is
+// near the ground (e.g. when altitude is below StopAltitude + AltitudeMargin + DisableMargin)
+// What this means in practice? Your ship will be able to land more safely on flat surfaces and sloped
+// surfaces without the problem that sometimes happens: the ship flyies to the sky.
+// NOTE: if your ship is big is still not recommended to land on the side of the mountains because
+// The altitude is calculated from the point of the terrain below the center of the ship.
+// NOTE 2: This feature is perfect for drop pods, even if you are going to land on the side of a mountain
+// NOTE 3: This feature is recommended also for big ships because makes the landing softer.
+// NOTE 4: If this feature is on you can set StopSpeed to 0 (i strongly suggest to do it).
+bool SmartDeactivation = true;
 
-double RotationSpeedLimit = 0.5; // Prevent wiggle during alignment, 0.5 seems to work but you are free to
-                                                        // experiment different values. if the ship wiggles to much lower this value.
+// Prevent wiggle during alignment, 0.5 seems to work but you are free to
+// experiment different values. if the ship wiggles to much lower this value.
+double RotationSpeedLimit = 0.8;
 
-// NEW ALTITUDE TRIGGER FEATURE
-//To use this feature put a prefix like this in front of a timer block name: [AT:put here altitude]
-//this prefix will TriggerNow the timer, but if you want to start the count Down use: [AT:put here altitude:Start]
-//when you stop the script this feature will reset, enabling the timers to be triggered again, if you need to stop the
-//script manually remember to rename again the timers because their prefix is changed to [ATE: ...] when they are triggered
+// Set to false to disable this feature
+bool enableAltitudeTrigger = true;
+// Lower tolerance = more precision but it may not work at high speeds
+double altitudeTriggerTolerance = 50;
 
-bool enableAltitudeTrigger = true; // Set to false to disable this feature
-double altitudeTriggerTolerance = 50; // Lower tolerance = more precision but it may not work at high speeds
+// Timer block trigger feature Prefixes
+// Prefix of the timer block to trigger when ship enters natural gravity
+string onGravityEntrancePrefix = "[ON-GRAV]";
+// Prefix of the timer block to trigger when ship starts the suicide burn
+string onSuicideBurnPrefix = "[ON-BURN]";
+// Prefix of the timer block to trigger when the script is automatically
+// deactivated (e.g. when ship lands or reach the target StopAltitude)
+// NOTE: The timers will be triggered only once per landing, if your timer triggers multiple times one reason
+// could be that you setup the timer loop that runs the program to run with argument start, you SHOULD NOT
+// do this, the argument start SHOULD be used only once per landing.
+string onLandingPrefix = "[ON-LAND]";
 
-//Timer block trigger feature Prefixes
-string onGravityEntrancePrefix = "[ON-GRAV]"; //Prefix of the timer block to trigger when ship enters natural gravity
-string onSuicideBurnPrefix = "[ON-BURN]"; //Prefix of the timer block to trigger when ship starts the suicide burn
-string onLandingPrefix = "[ON-LAND]"; //Prefix of the timer block to trigger when the script is automatically
-                                      //deactivated (e.g. when ship lands or reach the target StopAltitude)
-     //NOTE: The timers will be triggered only once per landing, if your timer triggers multiple times one reason
-     //could be that you setup the timer loop that runs the program to run with argument start, you SHOULD NOT
-     //do this, the argument start SHOULD be used only once per landing.
-/*
----------------------------------------------------------------------------------------------------------------------------------------------------------
-                     SETTINGS ARE ABOVE, DON'T EDIT BELOW UNLESS YOU KNOW WHAT YOU ARE DOING
----------------------------------------------------------------------------------------------------------------------------------------------------------
-*/
 // Main script body
-bool autopilot = false; //do not change this, it's not a setting
+bool autopilot = false;
 bool AutoFallUsed = false;
 bool[] TriggeredTimers = new bool[] {false, false, false};
 Vector3D oldVelocity3D = new Vector3D(0,0,0);
