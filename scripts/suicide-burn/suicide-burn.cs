@@ -100,11 +100,6 @@ bool SmartDeactivation = true;
 // experiment different values. if the ship wiggles to much lower this value.
 double RotationSpeedLimit = 0.8;
 
-// Set to false to disable this feature
-bool EnableAltitudeTrigger = true;
-// Lower tolerance = more precision but it may not work at high speeds
-double AltitudeTriggerTolerance = 50;
-
 // Timer block trigger feature Prefixes
 // Prefix of the timer block to trigger when ship enters natural gravity
 string OnGravityEntrancePrefix = "[ON-GRAV]";
@@ -227,10 +222,6 @@ public void Main(string input) {
         }
     }
 
-    if (EnableAltitudeTrigger && Autopilot) {
-        AltitudeTrigger(altitude);
-    }
-
     if (Autopilot) {
         if (altitude <= (StopAltitude + DisableMargin + AltitudeMargin)) {
             if (velocity < StopSpeed) {
@@ -261,23 +252,6 @@ public void Main(string input) {
         thrustController.Stop();
         deactivate(AdvancedGyros);
         Echo("Autopilot deactivated (manually)");
-    }
-}
-
-void AltitudeTrigger(double altitude) {
-    List<IMyTerminalBlock> AllTimers = new List<IMyTerminalBlock>();
-    GridTerminalSystem.GetBlocksOfType<IMyTimerBlock>(AllTimers);
-    foreach (IMyTimerBlock t in AllTimers) {
-        if (t.CustomName.StartsWith("[AT:")) {
-            string name = t.CustomName;
-            string tag = name.Split(']')[0];
-            string[] args = tag.Split(':');
-
-            if (Math.Abs(altitude - Convert.ToDouble(args[1])) < AltitudeTriggerTolerance) {
-                t.ApplyAction(2 < args.Length ? args[2] : "TriggerNow");
-                t.CustomName = t.CustomName.Replace("[AT:", "[ATE:");
-            }
-        }
     }
 }
 
