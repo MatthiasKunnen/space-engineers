@@ -128,8 +128,8 @@ public void Main(string input) {
         autopilot = true;
     }
 
-    IMyShipController cockpit = (IMyShipController)get_block(ShipControllerName);
-    IMyTerminalBlock origin = get_block(ShipControllerName);
+    IMyShipController cockpit = (IMyShipController)GetBlock(ShipControllerName);
+    IMyTerminalBlock origin = GetBlock(ShipControllerName);
 
     double altitude = 0;
     bool InsideNaturalGravity = cockpit.TryGetPlanetElevation(MyPlanetElevation.Surface, out altitude);
@@ -140,9 +140,9 @@ public void Main(string input) {
     IMyTerminalBlock SuicideBurnTimer;
     IMyTerminalBlock DeactivationTimer;
 
-    try {GravTimer = get_block(onGravityEntrancePrefix);} catch {GravTimer = null;}
-    try {SuicideBurnTimer = get_block(onSuicideBurnPrefix);} catch {SuicideBurnTimer = null;}
-    try {DeactivationTimer = get_block(onLandingPrefix);} catch {DeactivationTimer = null;}
+    try {GravTimer = GetBlock(onGravityEntrancePrefix);} catch {GravTimer = null;}
+    try {SuicideBurnTimer = GetBlock(onSuicideBurnPrefix);} catch {SuicideBurnTimer = null;}
+    try {DeactivationTimer = GetBlock(onLandingPrefix);} catch {DeactivationTimer = null;}
 
     if (!InsideNaturalGravity) {
         if (autopilot) {
@@ -549,7 +549,7 @@ class AdvGyro {
 
 //------------------------------------Get Blocks------------------------------------------
 
-IMyTerminalBlock get_block(string name) {
+IMyTerminalBlock GetBlock(string name) {
     List<IMyTerminalBlock> blks = new List<IMyTerminalBlock>{};
     GridTerminalSystem.GetBlocks(blks);
     for (int i = 0; i < blks.Count; i++) {
