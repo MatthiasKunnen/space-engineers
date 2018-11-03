@@ -67,6 +67,9 @@ string ShipControllerName = "Remote Control - Reference";
 // at the last second (more or less)
 string HydrogenThrustersGroupName = "Thrusters UP";
 
+// Optional LCDs with basic information.
+string lcdSearchName = "LCD Suicide Burn";
+
 // If set to 0 the ship will stop on the surface, otherwise will stop at the altitude
 // specified. if you set an high value i recommended to keep inertial dampeners on
 // unless you want your ship destroyed.
@@ -104,8 +107,12 @@ double RotationSpeedLimit = 0.8;
 bool Autopilot = false;
 bool AutoFallUsed = false;
 Vector3D OldVelocity3D = new Vector3D(0, 0, 0);
+List<IMyTextPanel> lcds;
 
 public void Main(string input) {
+    lcds = SearchBlocksWithName<IMyTextPanel>(lcdSearchName);
+    ClearOutput();
+
     if (input == "start") {
         Runtime.UpdateFrequency = UpdateFrequency.Update10;
         Autopilot = true;
@@ -120,10 +127,10 @@ public void Main(string input) {
 
     if (!InsideNaturalGravity) {
         if (Autopilot) {
-            Echo("Waiting for entering natural gravity");
+            WriteLine("Waiting for entering natural gravity");
             if (input == "stop") {
                 Autopilot = false;
-                Echo("Autopilot deactivated (manually)");
+                WriteLine("Autopilot deactivated (manually)");
             }
         }
         return;
@@ -192,13 +199,13 @@ public void Main(string input) {
         if (altitude <= (StopAltitude + DisableMargin + AltitudeMargin)) {
             if (velocity < StopSpeed) {
                 deactivate(AdvancedGyros);
-                Echo("Autopilot deactivated (automatically)");
+                WriteLine("Autopilot deactivated (automatically)");
             }
 
             if (SmartDeactivation) {
                 if (OldVelocity3D.X * velocity3D.X < 0 || OldVelocity3D.Y * velocity3D.Y < 0 || OldVelocity3D.Z * velocity3D.Z < 0) {
                     deactivate(AdvancedGyros);
-                    Echo("Autopilot deactivated (automatically)");
+                    WriteLine("Autopilot deactivated (automatically)");
                 }
             }
         }
@@ -210,8 +217,26 @@ public void Main(string input) {
         Runtime.UpdateFrequency = UpdateFrequency.None;
         thrustController.Stop();
         deactivate(AdvancedGyros);
-        Echo("Autopilot deactivated (manually)");
+        WriteLine("Autopilot deactivated (manually)");
     }
+}
+
+void ClearOutput() {
+    lcds.ForEach(lcd => {
+        lcd.WritePublicText("");
+    });
+}
+
+/// <summary>
+/// Writes one or more lines to the output.
+/// </summary>
+void WriteLine(params string[] input) {
+    var line = String.Join("\n", input) + "\n";
+    lcds.ForEach(lcd => {
+        lcd.WritePublicText(line, true);
+    });
+
+    Echo(line);
 }
 
 double CalculateBrakeDistance(double gravityStrength, double actualMass, double altitude, double maxthrust, double speed) {
@@ -506,6 +531,16 @@ List<T> GetBlocksInGroup<T>(string groupName) where T : class {
     }
 
     return null;
+}
+
+List<T> SearchBlocksWithName<T>(string name) where T : class {
+    var result = new List<T>();
+    var blocks = new List<IMyTerminalBlock>();
+    GridTerminalSystem.SearchBlocksOfName(name, blocks);
+
+    blocks.ForEach(block => result.Add((T)block));
+
+    return result;
 }
 
 void GetDirectionTo(
