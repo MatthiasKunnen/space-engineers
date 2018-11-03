@@ -107,6 +107,8 @@ double RotationSpeedLimit = 0.8;
 bool Autopilot = false;
 bool AutoFallUsed = false;
 Vector3D OldVelocity3D = new Vector3D(0, 0, 0);
+GyroController gyroController;
+List<IMyGyro> gyros;
 List<IMyTextPanel> lcds;
 
 public void Main(string input) {
@@ -146,8 +148,8 @@ public void Main(string input) {
     List<IMyThrust> thrusters = GetBlocksInGroup<IMyThrust>(HydrogenThrustersGroupName);
     ThrustController thrustController = new ThrustController(thrusters);
 
-    List<AdvGyro> AdvancedGyros = new List<AdvGyro>();
-    AdvancedGyros = AdvGyro.GetAllGyros(GridTerminalSystem, controlBlock, true);
+    gyros = GetBlocksOfType<IMyGyro>();
+    gyroController = new GyroController(controlBlock, gyros, Base6Directions.Direction.Down, RotationSpeedLimit);
 
     Vector3D gravity = controlBlock.GetNaturalGravity();
     Vector3D position = controlBlock.GetPosition(); // ship coords
@@ -162,28 +164,7 @@ public void Main(string input) {
     double brakeAltitude = StopAltitude + brakeDistance; // at this altitude the ship will start slowing Down
 
     if (Autopilot) {
-        Vector3D Target = position - gravity;
-
-        var x = Math.Floor(Target.GetDim(0)).ToString();
-        var y = Math.Floor(Target.GetDim(1)).ToString();
-        var z = Math.Floor(Target.GetDim(2)).ToString();
-
-        float range = (float)((controlBlock.GetPosition() - Target).Length());
-        float gyroPitch = 0;
-        float gyroYaw = 0;
-
-        GetDirectionTo(Target, controlBlock, ref gyroPitch, ref gyroYaw);
-
-        float speedMultiplier = (float)Math.Sqrt(Math.Pow(Math.Sqrt(gyroPitch * gyroPitch + gyroYaw * gyroYaw), 3)) * 0.01f;
-
-        var angularVelocity = controlBlock.GetShipVelocities().AngularVelocity;
-        var totalAngularVelocity = angularVelocity.Length();
-
-        if (totalAngularVelocity <= RotationSpeedLimit) {
-            AdvGyro.SetAllGyros(AdvancedGyros, true, gyroPitch * speedMultiplier, gyroYaw * speedMultiplier, 0);
-        } else {
-            AdvGyro.SetAllGyros(AdvancedGyros, true, 0, 0, 0);
-        }
+        gyroController.Align(gravity);
 
         if (input == "fall") {
             // This is a workaround to a game bug (ship speed greater than speed limit when free falling in natural gravity)
@@ -198,13 +179,13 @@ public void Main(string input) {
 
         if (altitude <= (StopAltitude + DisableMargin + AltitudeMargin)) {
             if (velocity < StopSpeed) {
-                deactivate(AdvancedGyros);
+                gyroController.Stop();
                 WriteLine("Autopilot deactivated (automatically)");
             }
 
             if (SmartDeactivation) {
                 if (OldVelocity3D.X * velocity3D.X < 0 || OldVelocity3D.Y * velocity3D.Y < 0 || OldVelocity3D.Z * velocity3D.Z < 0) {
-                    deactivate(AdvancedGyros);
+                    gyroController.Stop();
                     WriteLine("Autopilot deactivated (automatically)");
                 }
             }
@@ -215,8 +196,8 @@ public void Main(string input) {
 
     if (input == "stop") {
         Runtime.UpdateFrequency = UpdateFrequency.None;
+        gyroController.Stop();
         thrustController.Stop();
-        deactivate(AdvancedGyros);
         WriteLine("Autopilot deactivated (manually)");
     }
 }
@@ -246,13 +227,6 @@ double CalculateBrakeDistance(double gravityStrength, double actualMass, double 
     double brakeDistance = (speed * speed) / (2 * deceleration);
 
     return brakeDistance;
-}
-
-private void deactivate(List<AdvGyro> AdvancedGyros) {
-    AdvGyro.FreeAllGyros(AdvancedGyros);
-
-    Autopilot = false;
-    AutoFallUsed = false;
 }
 
 class ThrustController {
@@ -311,204 +285,117 @@ class ThrustController {
     }
 }
 
-class AdvGyro {
-    public IMyTerminalBlock Gyro {
-        get;
-        private set;
-    }
+partial class GyroController: MyGridProgram {
+    // Originally from:
+    // http://forums.keenswh.com/threads/aligning-ship-to-planet-gravity.7373513/#post-1286885461
 
-    public float Pitch {
-        get{ return Gyro.GetValueFloat(strPitch) * intPitch; }
-        set{ Gyro.SetValueFloat(strPitch, value * intPitch); }
-    }
+    /// <summary>
+    /// The alignment of the ship
+    /// </summary>
+    Base6Directions.Direction alignment;
 
-    public float Yaw {
-        get{ return Gyro.GetValueFloat(strYaw) * intYaw; }
-        set{ Gyro.SetValueFloat(strYaw, value * intYaw); }
-    }
+    /// <summary>
+    /// How much power to use. 0 to 1.0
+    /// </summary>
+    double powerCoefficient;
 
-    public float Roll {
-        get{ return Gyro.GetValueFloat(strRoll) * intRoll; }
-        set{ Gyro.SetValueFloat(strRoll, value * intRoll); }
-    }
+    /// <summary>
+    /// The ship controller used
+    /// </summary>
+    IMyShipController gyroControl;
 
-    public float Power {
-        get{ return Gyro.GetValueFloat("Power"); }
-        set{ Gyro.SetValueFloat("Power", value); }
-    }
+    /// <summary>
+    /// The list of gyros to use for aiming
+    /// </summary>
+    List<IMyGyro> gyros;
 
-    public bool Override {
-        get{ return Gyro.GetValue<bool>("Override"); }
-        set{ Gyro.SetValue<bool>("Override", value); }
-    }
+    /// <summary>
+    /// How tight to maintain aim. Lower is tighter. Default is 0.01f
+    /// </summary>
+    float minAngleRad = 0.01f;
 
-    public bool Enabled {
-        get{ return Gyro.GetValue<bool>("OnOff"); }
-        set{ Gyro.SetValue<bool>("OnOff", value); }
-    }
-
-    private string strPitch;
-    private int intPitch;
-    private string strYaw;
-    private int intYaw;
-    private string strRoll;
-    private int intRoll;
-
-    public AdvGyro(IMyTerminalBlock MyGyro, IMyTerminalBlock ForwardCockpit) {
-        Gyro = MyGyro;
-        Orientate(ForwardCockpit);
-    }
-
-    public void Free() {
-        this.Pitch = 0;
-        this.Yaw = 0;
-        this.Roll = 0;
-        this.Override = false;
-    }
-
-    public static List<AdvGyro> GetAllGyros(IMyGridTerminalSystem Term, IMyTerminalBlock ForwardCockpit, bool OnlyOwnGrid = true)  {
-        List<IMyTerminalBlock> AllGyros = new List<IMyTerminalBlock>();
-        Term.GetBlocksOfType<IMyGyro>(AllGyros);
-        if (OnlyOwnGrid) {
-            AllGyros.RemoveAll(x => x.CubeGrid != ForwardCockpit.CubeGrid);
-        }
-
-        List<AdvGyro> AdvGyros = new List<AdvGyro>();
-        foreach (IMyTerminalBlock g in AllGyros) {
-            AdvGyro NewAdvGyro = new AdvGyro(g, ForwardCockpit);
-            AdvGyros.Add(NewAdvGyro);
-        }
-
-        return AdvGyros;
-    }
-
-    public static void SetAllGyros(
-        List<AdvGyro> AllGyros,
-        bool AutoOverride = true,
-        float? NewPitch = null,
-        float? NewYaw = null,
-        float? NewRoll = null
+    public GyroController(
+        IMyShipController gyroControl,
+        List<IMyGyro> gyros,
+        Base6Directions.Direction alignment,
+        double powerCoefficient = 1
     ) {
-        foreach(AdvGyro g in AllGyros) {
-            if (NewPitch.HasValue) {
-                g.Pitch = (float)NewPitch;
-            }
-
-            if (NewYaw.HasValue) {
-                g.Yaw = (float)NewYaw;
-            }
-
-            if (NewRoll.HasValue) {
-                g.Roll = (float)NewRoll;
-            }
-
-            if (AutoOverride) {
-                if (g.Override == false) {
-                    g.Override = true;
-                }
-            }
-        }
+        this.gyroControl = gyroControl;
+        this.gyros = gyros;
+        this.alignment = alignment;
+        this.powerCoefficient = powerCoefficient;
     }
 
-    public static void FreeAllGyros(List<AdvGyro> AllGyros) {
-        foreach(AdvGyro g in AllGyros) {
-            g.Free();
-        }
+    /// <summary>
+    /// Align the ship/grid with the given vector.
+    /// </summary>
+    /// <param name="alignment">The alignment of the ship.</param>
+    /// <param name="vDirection">the vector to aim for.</param>
+    /// <returns>true if aligned. Meaning the angle of error is less than minAngleRad</returns>
+    public bool Align(Vector3D vDirection, Base6Directions.Direction? alignment = null) {
+        bool aligned = true;
+        Matrix orientation;
+        gyroControl.Orientation.GetMatrix(out orientation);
+
+        Vector3D down = orientation.GetDirectionVector(alignment ?? this.alignment);
+        vDirection.Normalize();
+
+        gyros.ForEach(gyro => {
+            gyro.Orientation.GetMatrix(out orientation);
+
+            var localCurrent = Vector3D.Transform(down, MatrixD.Transpose(orientation));
+            var localTarget = Vector3D.Transform(vDirection, MatrixD.Transpose(gyro.WorldMatrix.GetOrientation()));
+
+            // Since the gyro ui lies, we are not trying to control yaw, pitch, roll
+            // but rather we need a rotation vector (axis around which to rotate)
+            var rot = Vector3D.Cross(localCurrent, localTarget);
+            double dot2 = Vector3D.Dot(localCurrent, localTarget);
+            double ang = rot.Length();
+            ang = Math.Atan2(ang, Math.Sqrt(Math.Max(0.0, 1.0 - ang * ang)));
+            if (dot2 < 0) ang = Math.PI - ang; // Compensate for >+/-90
+            if (ang < minAngleRad) {
+
+                gyro.GyroOverride = false;
+                return;
+            }
+
+            float yawMax = (float)(2 * Math.PI);
+
+            double ctrlLvl = yawMax * (ang / Math.PI) * powerCoefficient;
+
+            ctrlLvl = Math.Min(yawMax, ctrlLvl);
+            ctrlLvl = Math.Max(0.01, ctrlLvl);
+            rot.Normalize();
+            rot *= ctrlLvl;
+
+            float pitch = -(float)rot.X;
+            gyro.Pitch = pitch;
+
+            float yaw = -(float)rot.Y;
+            gyro.Yaw = yaw;
+
+            float roll = -(float)rot.Z;
+            gyro.Roll = roll;
+
+            gyro.GyroOverride = true;
+
+            aligned = false;
+        });
+        return aligned;
     }
 
-    // Big thanks to Skleroz for this awesome stuff.
-    private void Orientate(IMyTerminalBlock ReferencePoint) {
-        Vector3 V3For = Base6Directions.GetVector(ReferencePoint.Orientation.TransformDirection(Base6Directions.Direction.Forward));
-        Vector3 V3Up = Base6Directions.GetVector(ReferencePoint.Orientation.TransformDirection(Base6Directions.Direction.Up));
-        V3For.Normalize();
-        V3Up.Normalize();
-        Base6Directions.Direction B6DFor = Base6Directions.GetDirection(V3For);
-        Base6Directions.Direction B6DTop = Base6Directions.GetDirection(V3Up);
-        Base6Directions.Direction B6DLeft = Base6Directions.GetLeft(B6DTop, B6DFor);
-        Base6Directions.Direction GyroUp = Gyro.Orientation.TransformDirectionInverse(B6DTop);
-        Base6Directions.Direction GyroForward = Gyro.Orientation.TransformDirectionInverse(B6DFor);
-        Base6Directions.Direction GyroLeft = Gyro.Orientation.TransformDirectionInverse(B6DLeft);
-
-        switch (GyroUp) {
-            case Base6Directions.Direction.Up:
-                strYaw = "Yaw";
-                intYaw = 1;
-                break;
-            case Base6Directions.Direction.Down:
-                strYaw = "Yaw";
-                intYaw = -1;
-                break;
-            case Base6Directions.Direction.Left:
-                strYaw = "Pitch";
-                intYaw = 1;
-                break;
-            case Base6Directions.Direction.Right:
-                strYaw = "Pitch";
-                intYaw = -1;
-                break;
-            case Base6Directions.Direction.Backward:
-                strYaw = "Roll";
-                intYaw = 1;
-                break;
-            case Base6Directions.Direction.Forward:
-                strYaw = "Roll";
-                intYaw = -1;
-                break;
-        }
-
-        switch (GyroLeft) {
-            case Base6Directions.Direction.Up:
-                strPitch = "Yaw";
-                intPitch = 1;
-                break;
-            case Base6Directions.Direction.Down:
-                strPitch = "Yaw";
-                intPitch = -1;
-                break;
-            case Base6Directions.Direction.Left:
-                strPitch = "Pitch";
-                intPitch = 1;
-                break;
-            case Base6Directions.Direction.Right:
-                strPitch = "Pitch";
-                intPitch = -1;
-                break;
-            case Base6Directions.Direction.Backward:
-                strPitch = "Roll";
-                intPitch = 1;
-                break;
-            case Base6Directions.Direction.Forward:
-                strPitch = "Roll";
-                intPitch = -1;
-                break;
-        }
-
-        switch (GyroForward) {
-            case Base6Directions.Direction.Up:
-                strRoll = "Yaw";
-                intRoll = -1;
-                break;
-            case Base6Directions.Direction.Down:
-                strRoll = "Yaw";
-                intRoll = 1;
-                break;
-            case Base6Directions.Direction.Left:
-                strRoll = "Pitch";
-                intRoll = -1;
-                break;
-            case Base6Directions.Direction.Right:
-                strRoll = "Pitch";
-                intRoll = 1;
-                break;
-            case Base6Directions.Direction.Backward:
-                strRoll = "Roll";
-                intRoll = -1;
-                break;
-            case Base6Directions.Direction.Forward:
-                strRoll = "Roll";
-                intRoll = 1;
-                break;
-        }
+    /// <summary>
+    /// Turns off all overrides on controlled Gyros
+    /// </summary>
+    public void Stop() {
+        gyros.ForEach(gyro => {
+            if (gyro.GyroOverride) {
+                gyro.GetActionWithName("Override").Apply(gyro);
+                gyro.Pitch = 0;
+                gyro.Yaw = 0;
+                gyro.Roll = 0;
+            }
+        });
     }
 }
 
@@ -533,6 +420,16 @@ List<T> GetBlocksInGroup<T>(string groupName) where T : class {
     return null;
 }
 
+List<T> GetBlocksOfType<T>() where T : class {
+    var result = new List<T>();
+    var blocks = new List<IMyTerminalBlock>();
+    GridTerminalSystem.GetBlocksOfType<T>(blocks);
+
+    blocks.ForEach(block => result.Add((T)block));
+
+    return result;
+}
+
 List<T> SearchBlocksWithName<T>(string name) where T : class {
     var result = new List<T>();
     var blocks = new List<IMyTerminalBlock>();
@@ -541,42 +438,4 @@ List<T> SearchBlocksWithName<T>(string name) where T : class {
     blocks.ForEach(block => result.Add((T)block));
 
     return result;
-}
-
-void GetDirectionTo(
-    VRageMath.Vector3D TV,
-    IMyTerminalBlock origin,
-    ref float pitch,
-    ref float yaw
-) {
-    VRageMath.Vector3D OV = origin.GetPosition(); // Get positions of reference blocks.
-    VRageMath.Vector3D FV = origin.WorldMatrix.Forward + origin.GetPosition();
-    VRageMath.Vector3D UV = origin.WorldMatrix.Up + origin.GetPosition();
-    VRageMath.Vector3D RV = origin.WorldMatrix.Right + origin.GetPosition();
-
-    float TVOV = (float)((OV - TV).Length()); // Get magnitudes of vectors.
-
-    float TVFV = (float)((FV - TV).Length());
-    float TVUV = (float)((UV - TV).Length());
-    float TVRV = (float)((RV - TV).Length());
-
-    float OVFV = (float)((FV - OV).Length());
-    float OVUV = (float)((UV - OV).Length());
-    float OVRV = (float)((RV - OV).Length());
-
-    float ThetaP = (float)(Math.Acos((TVUV * TVUV - OVUV * OVUV - TVOV * TVOV) / (-2 * OVUV * TVOV)));
-    // Use law of cosines to determine angles.
-    float ThetaY = (float)(Math.Acos((TVRV * TVRV - OVRV * OVRV - TVOV * TVOV) / (-2 * OVRV * TVOV)));
-
-    float RPitch = (float)(90 - (ThetaP * 180 / Math.PI)); // Convert from radians to degrees.
-    float RYaw = (float)(90 - (ThetaY * 180 / Math.PI));
-
-    if (TVOV < TVFV) RPitch = 180 - RPitch;// Normalize angles to -180 to 180 degrees.
-    if (RPitch > 180) RPitch = -1 * (360 - RPitch);
-
-    if (TVOV < TVFV) RYaw = 180 - RYaw;
-    if (RYaw > 180) RYaw = -1 * (360 - RYaw);
-
-    pitch = RPitch; // Set Pitch and Yaw outputs.
-    yaw = RYaw;
 }
