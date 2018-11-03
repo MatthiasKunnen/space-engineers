@@ -107,6 +107,7 @@ Vector3D OldVelocity3D = new Vector3D(0, 0, 0);
 
 public void Main(string input) {
     if (input == "start") {
+        Runtime.UpdateFrequency = UpdateFrequency.Update10;
         Autopilot = true;
     }
 
@@ -206,6 +207,7 @@ public void Main(string input) {
     OldVelocity3D = velocity3D;
 
     if (input == "stop") {
+        Runtime.UpdateFrequency = UpdateFrequency.None;
         thrustController.Stop();
         deactivate(AdvancedGyros);
         Echo("Autopilot deactivated (manually)");
