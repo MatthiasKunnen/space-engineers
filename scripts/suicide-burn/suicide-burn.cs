@@ -65,7 +65,7 @@ string ShipControllerName = "Remote Control - Reference";
 // This group must contain the hydrogen thrusters that are facing the
 // surface of the planet. this thrusters will be used to stop the ship
 // at the last second (more or less)
-string HydrogenThrustersGroupName = "h_thrs";
+string HydrogenThrustersGroupName = "Thrusters UP";
 
 // If set to 0 the ship will stop on the surface, otherwise will stop at the altitude
 // specified. if you set an high value i recommended to keep inertial dampeners on
@@ -101,31 +101,31 @@ bool SmartDeactivation = true;
 double RotationSpeedLimit = 0.8;
 
 // Set to false to disable this feature
-bool enableAltitudeTrigger = true;
+bool EnableAltitudeTrigger = true;
 // Lower tolerance = more precision but it may not work at high speeds
-double altitudeTriggerTolerance = 50;
+double AltitudeTriggerTolerance = 50;
 
 // Timer block trigger feature Prefixes
 // Prefix of the timer block to trigger when ship enters natural gravity
-string onGravityEntrancePrefix = "[ON-GRAV]";
+string OnGravityEntrancePrefix = "[ON-GRAV]";
 // Prefix of the timer block to trigger when ship starts the suicide burn
-string onSuicideBurnPrefix = "[ON-BURN]";
+string OnSuicideBurnPrefix = "[ON-BURN]";
 // Prefix of the timer block to trigger when the script is automatically
 // deactivated (e.g. when ship lands or reach the target StopAltitude)
 // NOTE: The timers will be triggered only once per landing, if your timer triggers multiple times one reason
 // could be that you setup the timer loop that runs the program to run with argument start, you SHOULD NOT
 // do this, the argument start SHOULD be used only once per landing.
-string onLandingPrefix = "[ON-LAND]";
+string OnLandingPrefix = "[ON-LAND]";
 
 // Main script body
-bool autopilot = false;
+bool Autopilot = false;
 bool AutoFallUsed = false;
-bool[] TriggeredTimers = new bool[] {false, false, false};
-Vector3D oldVelocity3D = new Vector3D(0,0,0);
+bool[] TriggeredTimers = new bool[]{false, false, false};
+Vector3D OldVelocity3D = new Vector3D(0, 0, 0);
 
 public void Main(string input) {
     if (input == "start") {
-        autopilot = true;
+        Autopilot = true;
     }
 
     IMyShipController cockpit = (IMyShipController)GetBlock(ShipControllerName);
@@ -140,21 +140,21 @@ public void Main(string input) {
     IMyTerminalBlock SuicideBurnTimer;
     IMyTerminalBlock DeactivationTimer;
 
-    try {GravTimer = GetBlock(onGravityEntrancePrefix);} catch {GravTimer = null;}
-    try {SuicideBurnTimer = GetBlock(onSuicideBurnPrefix);} catch {SuicideBurnTimer = null;}
-    try {DeactivationTimer = GetBlock(onLandingPrefix);} catch {DeactivationTimer = null;}
+    try {GravTimer = GetBlock(OnGravityEntrancePrefix);} catch {GravTimer = null;}
+    try {SuicideBurnTimer = GetBlock(OnSuicideBurnPrefix);} catch {SuicideBurnTimer = null;}
+    try {DeactivationTimer = GetBlock(OnLandingPrefix);} catch {DeactivationTimer = null;}
 
     if (!InsideNaturalGravity) {
-        if (autopilot) {
+        if (Autopilot) {
             Echo("Waiting for entering natural gravity");
             if (input == "stop") {
-                autopilot = false;
+                Autopilot = false;
                 Echo("Autopilot deactivated (manually)");
             }
         }
         return;
     } else {
-        if (autopilot) {
+        if (Autopilot) {
             if ((!TriggeredTimers[0]) && (GravTimer != null)) {
                 GravTimer.ApplyAction("TriggerNow");
                 TriggeredTimers[0] = true;
@@ -168,8 +168,8 @@ public void Main(string input) {
         }
     }
 
-    List<IMyTerminalBlock> h_thrs = new List<IMyTerminalBlock>();
-    try {h_thrs = GetBlockGroupsWithName(HydrogenThrustersGroupName);}
+    List<IMyTerminalBlock> thrusters = new List<IMyTerminalBlock>();
+    try {thrusters = GetBlockGroupsWithName(HydrogenThrustersGroupName);}
     catch (System.Exception)
     {Echo("Thrusters group not found"); return;}
 
@@ -177,24 +177,19 @@ public void Main(string input) {
     AdvancedGyros = AdvGyro.GetAllGyros(GridTerminalSystem, cockpit, true);
 
     Vector3D grav = cockpit.GetNaturalGravity();
-    double G_ms = Math.Sqrt(Math.Pow(grav.X, 2) + Math.Pow(grav.Y, 2) + Math.Pow(grav.Z, 2)); //gravity in m/s^2
-    double G = G_ms/9.81; //gravity form 0 to 1
-
-    double total_mass = cockpit.CalculateShipMass().TotalMass; //ship total mass including cargo mass
-    double base_mass = cockpit.CalculateShipMass().BaseMass; //mass of the ship without cargo
-    double cargo_mass = total_mass - base_mass; //mass of the cargo
-    double actual_mass = base_mass + (cargo_mass / InventoryMultiplier); //the mass the game uses for physics calculation
-    double shipWeight = actual_mass * G_ms; //weight in newtons of the ship
-
-    double vel = cockpit.GetShipSpeed(); //ship velocity
-
-    Vector3D pos = origin.GetPosition(); //ship coords
-
-    double maxthrust = calcMaxThrust(h_thrs);
-    double brakeDistance = calcBrakeDistance(G_ms, actual_mass, altitude, maxthrust, vel);
+    Vector3D pos = origin.GetPosition(); // ship coords
+    double gravityStrength = Math.Sqrt(Math.Pow(grav.X, 2) + Math.Pow(grav.Y, 2) + Math.Pow(grav.Z, 2)); // gravity in m/s^2
+    double totalMass = cockpit.CalculateShipMass().TotalMass; // ship total mass including cargo mass
+    double baseMass = cockpit.CalculateShipMass().BaseMass; // mass of the ship without cargo
+    double cargoMass = totalMass - baseMass; // mass of the cargo
+    double actualMass = baseMass + (cargoMass / InventoryMultiplier); // the mass the game uses for physics calculation
+    double shipWeight = actualMass * gravityStrength; // weight in newtons of the ship
+    double vel = cockpit.GetShipSpeed(); // ship velocity
+    double maxthrust = CalculateMaxThrust(thrusters);
+    double brakeDistance = CalculateBrakeDistance(gravityStrength, actualMass, altitude, maxthrust, vel);
     double brakeAltitude = StopAltitude + brakeDistance; // at this altitude the ship will start slowing Down
 
-    if (autopilot) {
+    if (Autopilot) {
         Vector3D Target = new Vector3D(pos.X-grav.X, pos.Y-grav.Y, pos.Z-grav.Z);
 
         var x = Math.Floor(Target.GetDim(0)).ToString();
@@ -202,36 +197,35 @@ public void Main(string input) {
         var z = Math.Floor(Target.GetDim(2)).ToString();
 
         float range = (float)((origin.GetPosition() - Target).Length());
-
         float gyroPitch = 0;
         float gyroYaw = 0;
 
         GetDirectionTo(Target, origin, ref gyroPitch, ref gyroYaw);
 
-        float SpeedMul = (float)Math.Sqrt(Math.Pow(Math.Sqrt(gyroPitch*gyroPitch+ gyroYaw*gyroYaw), 3))*0.01f;
+        float speedMultiplier = (float)Math.Sqrt(Math.Pow(Math.Sqrt(gyroPitch * gyroPitch + gyroYaw * gyroYaw), 3)) * 0.01f;
 
         var angularVel = cockpit.GetShipVelocities().AngularVelocity;
         var totAngVel = Math.Sqrt(angularVel.X * angularVel.X + angularVel.Y * angularVel.Y + angularVel.Z * angularVel.Z);
 
         if (totAngVel <= RotationSpeedLimit) {
-            AdvGyro.SetAllGyros(AdvancedGyros, true, gyroPitch * SpeedMul, gyroYaw * SpeedMul, 0);
+            AdvGyro.SetAllGyros(AdvancedGyros, true, gyroPitch * speedMultiplier, gyroYaw * speedMultiplier, 0);
         } else {
             AdvGyro.SetAllGyros(AdvancedGyros, true, 0, 0, 0);
         }
     }
 
-    if (autopilot) {
+    if (Autopilot) {
         if (input == "fall") {
             // This is a workaround to a game bug (ship speed greater than speed limit when free falling in natural gravity)
             // Pros: your ship will not crash. Cons: you will waste a tiny amount of hydrogen.
-            ((IMyThrust)h_thrs[0]).ThrustOverride = 1F;
+            ((IMyThrust)thrusters[0]).ThrustOverride = 1F;
         }
 
-            //BRAKE!!!
         if (altitude <= (brakeAltitude + AltitudeMargin)) {
-            for (int i=0; i < h_thrs.Count; i++) {
-                if (IsHydrogenThrusterWorking(h_thrs[i])) {
-                    ((IMyThrust)h_thrs[i]).ThrustOverridePercentage = 1F;
+            // BRAKE!!!
+            for (int i=0; i < thrusters.Count; i++) {
+                if (IsHydrogenThrusterWorking(thrusters[i])) {
+                    ((IMyThrust)thrusters[i]).ThrustOverridePercentage = 1F;
                 }
             }
             if ((!TriggeredTimers[1]) && (SuicideBurnTimer != null)) {
@@ -241,14 +235,14 @@ public void Main(string input) {
         }
     }
 
-    if (enableAltitudeTrigger && autopilot) {
+    if (EnableAltitudeTrigger && Autopilot) {
         AltitudeTrigger(altitude);
     }
 
-    if (autopilot) {
+    if (Autopilot) {
         if (altitude <= (StopAltitude + DisableMargin + AltitudeMargin)) {
             if (vel < StopSpeed) {
-                deactivate(AdvancedGyros, h_thrs);
+                deactivate(AdvancedGyros, thrusters);
                 Echo("Autopilot deactivated (automatically)");
                 if ((!TriggeredTimers[2]) && (DeactivationTimer != null)) {
                     DeactivationTimer.ApplyAction("TriggerNow");
@@ -257,8 +251,8 @@ public void Main(string input) {
             }
 
             if (SmartDeactivation) {
-                if (oldVelocity3D.X * velocity3D.X < 0 || oldVelocity3D.Y * velocity3D.Y < 0 || oldVelocity3D.Z * velocity3D.Z < 0) {
-                    deactivate(AdvancedGyros, h_thrs);
+                if (OldVelocity3D.X * velocity3D.X < 0 || OldVelocity3D.Y * velocity3D.Y < 0 || OldVelocity3D.Z * velocity3D.Z < 0) {
+                    deactivate(AdvancedGyros, thrusters);
                     Echo("Autopilot deactivated (automatically)");
                     if ((!TriggeredTimers[2]) && (DeactivationTimer != null)) {
                         DeactivationTimer.ApplyAction("TriggerNow");
@@ -268,15 +262,16 @@ public void Main(string input) {
             }
         }
     }
-    oldVelocity3D = velocity3D;
-    //------SCRIPT MANUAL DEACTIVATION----------
+
+    OldVelocity3D = velocity3D;
+
     if (input == "stop") {
-        deactivate(AdvancedGyros, h_thrs);
+        deactivate(AdvancedGyros, thrusters);
         Echo("Autopilot deactivated (manually)");
     }
 }
 
-void AltitudeTrigger(double A) {
+void AltitudeTrigger(double altitude) {
     List<IMyTerminalBlock> AllTimers = new List<IMyTerminalBlock>();
     GridTerminalSystem.GetBlocksOfType<IMyTimerBlock>(AllTimers);
     foreach (IMyTimerBlock t in AllTimers) {
@@ -285,44 +280,37 @@ void AltitudeTrigger(double A) {
             string tag = name.Split(']')[0];
             string[] args = tag.Split(':');
 
-                if (2 < args.Length) {
-                    t.ApplyAction(args[2]);
-                } else {
-                    t.ApplyAction("TriggerNow");
-                }
-            if (Math.Abs(A - Convert.ToDouble(args[1])) < altitudeTriggerTolerance) {
+            if (Math.Abs(altitude - Convert.ToDouble(args[1])) < AltitudeTriggerTolerance) {
+                t.ApplyAction(2 < args.Length ? args[2] : "TriggerNow");
                 t.CustomName = t.CustomName.Replace("[AT:", "[ATE:");
             }
         }
     }
 }
 
-double calcBrakeDistance(double G_ms, double actual_mass, double altitude, double maxthrust, double speed){
-    double brakeDistance = 0;
-    double shipWeight = actual_mass * G_ms;
-
+double CalculateBrakeDistance(double gravityStrength, double actualMass, double altitude, double maxthrust, double speed) {
+    double shipWeight = actualMass * gravityStrength;
     double brakeForce = maxthrust - shipWeight;
-    double deceleration = brakeForce / actual_mass;
-
-    brakeDistance = (speed*speed) / (2 * deceleration);
+    double deceleration = brakeForce / actualMass;
+    double brakeDistance = (speed * speed) / (2 * deceleration);
 
     return brakeDistance;
 }
 
-double calcMaxThrust(List<IMyTerminalBlock> h_thrs) {
+double CalculateMaxThrust(List<IMyTerminalBlock> thrusters) {
     double max = 0;
 
-    foreach (IMyTerminalBlock thr in h_thrs) {
-        if (IsHydrogenThrusterWorking(thr)) {
-            IMyThrust curr_thr = (IMyThrust)thr;
-            max += curr_thr.MaxThrust;
+    foreach (IMyTerminalBlock thruster in thrusters) {
+        if (IsHydrogenThrusterWorking(thruster)) {
+            IMyThrust currentThrust = (IMyThrust)thruster;
+            max += currentThrust.MaxThrust;
         }
     }
 
     return max;
 }
 
-private void deactivate(List<AdvGyro> AdvancedGyros, List<IMyTerminalBlock> h_thrs) {
+private void deactivate(List<AdvGyro> AdvancedGyros, List<IMyTerminalBlock> thrusters) {
     List<IMyTerminalBlock> AllTimers = new List<IMyTerminalBlock>();
     GridTerminalSystem.GetBlocksOfType<IMyTimerBlock>(AllTimers);
     foreach (IMyTimerBlock t in AllTimers) {
@@ -333,11 +321,11 @@ private void deactivate(List<AdvGyro> AdvancedGyros, List<IMyTerminalBlock> h_th
 
     AdvGyro.FreeAllGyros(AdvancedGyros);
 
-    for (int i = 0; i < h_thrs.Count; i++) {
-        ((IMyThrust)h_thrs[i]).ThrustOverridePercentage = 0F;
+    for (int i = 0; i < thrusters.Count; i++) {
+        ((IMyThrust)thrusters[i]).ThrustOverridePercentage = 0F;
     }
 
-    autopilot = false;
+    Autopilot = false;
     AutoFallUsed = false;
     TriggeredTimers[0] = false;TriggeredTimers[1] = false;TriggeredTimers[2] = false;
 }
@@ -560,11 +548,11 @@ IMyTerminalBlock GetBlock(string name) {
     throw new Exception(name + " Not Found");
 }
 
-List<IMyTerminalBlock> GetBlockGroupsWithName(string strGroupName) {
+List<IMyTerminalBlock> GetBlockGroupsWithName(string groupName) {
     List<IMyBlockGroup> allGroups = new List<IMyBlockGroup>();
     GridTerminalSystem.GetBlockGroups(allGroups);
 
-    var blockGroup = allGroups.Find(g => g.Name.Equals(strGroupName));
+    var blockGroup = allGroups.Find(g => g.Name.Equals(groupName));
     List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
 
     if (blockGroup != null) {
@@ -572,23 +560,21 @@ List<IMyTerminalBlock> GetBlockGroupsWithName(string strGroupName) {
         return blocks;
     }
 
-    throw new Exception(" " + strGroupName + " Not Found");
+    throw new Exception(" " + groupName + " Not Found");
 }
 
-//------------------------------------------------------------------------------------------
-//----------------------------get direction-------------------------------------------------
 void GetDirectionTo(
     VRageMath.Vector3D TV,
-    IMyTerminalBlock Origin,
-    ref float Pitch,
-    ref float Yaw
+    IMyTerminalBlock origin,
+    ref float pitch,
+    ref float yaw
 ) {
-    VRageMath.Vector3D OV = Origin.GetPosition();// Get positions of reference blocks.
-    VRageMath.Vector3D FV = Origin.WorldMatrix.Forward + Origin.GetPosition();
-    VRageMath.Vector3D UV = Origin.WorldMatrix.Up + Origin.GetPosition();
-    VRageMath.Vector3D RV = Origin.WorldMatrix.Right + Origin.GetPosition();
+    VRageMath.Vector3D OV = origin.GetPosition(); // Get positions of reference blocks.
+    VRageMath.Vector3D FV = origin.WorldMatrix.Forward + origin.GetPosition();
+    VRageMath.Vector3D UV = origin.WorldMatrix.Up + origin.GetPosition();
+    VRageMath.Vector3D RV = origin.WorldMatrix.Right + origin.GetPosition();
 
-    float TVOV = (float)((OV - TV).Length());// Get magnitudes of vectors.
+    float TVOV = (float)((OV - TV).Length()); // Get magnitudes of vectors.
 
     float TVFV = (float)((FV - TV).Length());
     float TVUV = (float)((UV - TV).Length());
@@ -602,7 +588,7 @@ void GetDirectionTo(
     // Use law of cosines to determine angles.
     float ThetaY = (float)(Math.Acos((TVRV * TVRV - OVRV * OVRV - TVOV * TVOV) / (-2 * OVRV * TVOV)));
 
-    float RPitch = (float)(90 - (ThetaP * 180 / Math.PI));// Convert from radians to degrees.
+    float RPitch = (float)(90 - (ThetaP * 180 / Math.PI)); // Convert from radians to degrees.
     float RYaw = (float)(90 - (ThetaY * 180 / Math.PI));
 
     if (TVOV < TVFV) RPitch = 180 - RPitch;// Normalize angles to -180 to 180 degrees.
@@ -611,21 +597,11 @@ void GetDirectionTo(
     if (TVOV < TVFV) RYaw = 180 - RYaw;
     if (RYaw > 180) RYaw = -1 * (360 - RYaw);
 
-    Pitch = RPitch;// Set Pitch and Yaw outputs.
-    Yaw = RYaw;
+    pitch = RPitch; // Set Pitch and Yaw outputs.
+    yaw = RYaw;
 }
 
-//------ OTHER UTILS -------
-
-private bool IsHydrogenThrusterWorking(IMyTerminalBlock thr){
-    if (((IMyFunctionalBlock)thr).Enabled){
-        IMyThrust t = (IMyThrust)thr;
-        if (t.ThrustOverride != 0 && t.CurrentThrust == 0){ // Thruster not working (Maybe because has no fuel)
-            return false;
-        }else{ // Thruster working
-            return true;
-        }
-    } else { // Thruster turned off
-        return false;
-    }
+private bool IsHydrogenThrusterWorking(IMyTerminalBlock thr) {
+    var thruster = (IMyThrust)thr;
+    return thruster.Enabled && (thruster.ThrustOverride == 0 || thruster.CurrentThrust != 0);
 }
