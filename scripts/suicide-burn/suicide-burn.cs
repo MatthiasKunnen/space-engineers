@@ -168,6 +168,7 @@ public void Main(string input) {
     }
 
     List<IMyThrust> thrusters = GetBlocksInGroup<IMyThrust>(HydrogenThrustersGroupName);
+    ThrustController thrustController = new ThrustController(thrusters);
 
     List<AdvGyro> AdvancedGyros = new List<AdvGyro>();
     AdvancedGyros = AdvGyro.GetAllGyros(GridTerminalSystem, controlBlock, true);
@@ -181,8 +182,7 @@ public void Main(string input) {
     double actualMass = baseMass + (cargoMass / InventoryMultiplier); // the mass the game uses for physics calculation
     double shipWeight = actualMass * gravityStrength; // weight in newtons of the ship
     double velocity = controlBlock.GetShipSpeed(); // ship velocity
-    double maxthrust = CalculateMaxThrust(thrusters);
-    double brakeDistance = CalculateBrakeDistance(gravityStrength, actualMass, altitude, maxthrust, velocity);
+    double brakeDistance = CalculateBrakeDistance(gravityStrength, actualMass, altitude, thrustController.availableThrust, velocity);
     double brakeAltitude = StopAltitude + brakeDistance; // at this altitude the ship will start slowing Down
 
     if (Autopilot) {
@@ -214,16 +214,12 @@ public void Main(string input) {
         if (input == "fall") {
             // This is a workaround to a game bug (ship speed greater than speed limit when free falling in natural gravity)
             // Pros: your ship will not crash. Cons: you will waste a tiny amount of hydrogen.
-            ((IMyThrust)thrusters[0]).ThrustOverride = 1F;
+            thrustController.ApplyThrust(1);
         }
 
         if (altitude <= (brakeAltitude + AltitudeMargin)) {
             // BRAKE!!!
-            for (int i=0; i < thrusters.Count; i++) {
-                if (IsHydrogenThrusterWorking(thrusters[i])) {
-                    ((IMyThrust)thrusters[i]).ThrustOverridePercentage = 1F;
-                }
-            }
+            thrustController.ApplyFullThrust(); // Maybe just enable dampeners
             if ((!TriggeredTimers[1]) && (SuicideBurnTimer != null)) {
                 SuicideBurnTimer.ApplyAction("TriggerNow");
                 TriggeredTimers[1] = true;
@@ -238,7 +234,7 @@ public void Main(string input) {
     if (Autopilot) {
         if (altitude <= (StopAltitude + DisableMargin + AltitudeMargin)) {
             if (velocity < StopSpeed) {
-                deactivate(AdvancedGyros, thrusters);
+                deactivate(AdvancedGyros);
                 Echo("Autopilot deactivated (automatically)");
                 if ((!TriggeredTimers[2]) && (DeactivationTimer != null)) {
                     DeactivationTimer.ApplyAction("TriggerNow");
@@ -248,7 +244,7 @@ public void Main(string input) {
 
             if (SmartDeactivation) {
                 if (OldVelocity3D.X * velocity3D.X < 0 || OldVelocity3D.Y * velocity3D.Y < 0 || OldVelocity3D.Z * velocity3D.Z < 0) {
-                    deactivate(AdvancedGyros, thrusters);
+                    deactivate(AdvancedGyros);
                     Echo("Autopilot deactivated (automatically)");
                     if ((!TriggeredTimers[2]) && (DeactivationTimer != null)) {
                         DeactivationTimer.ApplyAction("TriggerNow");
@@ -262,7 +258,8 @@ public void Main(string input) {
     OldVelocity3D = velocity3D;
 
     if (input == "stop") {
-        deactivate(AdvancedGyros, thrusters);
+        thrustController.Stop();
+        deactivate(AdvancedGyros);
         Echo("Autopilot deactivated (manually)");
     }
 }
@@ -293,20 +290,7 @@ double CalculateBrakeDistance(double gravityStrength, double actualMass, double 
     return brakeDistance;
 }
 
-double CalculateMaxThrust(List<IMyTerminalBlock> thrusters) {
-    double max = 0;
-
-    foreach (IMyTerminalBlock thruster in thrusters) {
-        if (IsHydrogenThrusterWorking(thruster)) {
-            IMyThrust currentThrust = (IMyThrust)thruster;
-            max += currentThrust.MaxThrust;
-        }
-    }
-
-    return max;
-}
-
-private void deactivate(List<AdvGyro> AdvancedGyros, List<IMyTerminalBlock> thrusters) {
+private void deactivate(List<AdvGyro> AdvancedGyros) {
     List<IMyTerminalBlock> AllTimers = new List<IMyTerminalBlock>();
     GridTerminalSystem.GetBlocksOfType<IMyTimerBlock>(AllTimers);
     foreach (IMyTimerBlock t in AllTimers) {
@@ -317,18 +301,66 @@ private void deactivate(List<AdvGyro> AdvancedGyros, List<IMyTerminalBlock> thru
 
     AdvGyro.FreeAllGyros(AdvancedGyros);
 
-    for (int i = 0; i < thrusters.Count; i++) {
-        ((IMyThrust)thrusters[i]).ThrustOverridePercentage = 0F;
-    }
-
     Autopilot = false;
     AutoFallUsed = false;
     TriggeredTimers[0] = false;TriggeredTimers[1] = false;TriggeredTimers[2] = false;
 }
 
-//------------------------------------------------------------------------------------------
-//-----------------------------AdvGyro class -----------------------------------------------
+class ThrustController {
 
+    // The available thrust in N
+    public readonly double availableThrust;
+
+    List<IMyThrust> thrusters;
+
+    public ThrustController(List<IMyThrust> thrusters) {
+        if (thrusters.Count == 0) {
+            throw new ArgumentException("At least one thruster required");
+        }
+
+        this.availableThrust = thrusters.Sum(t => t.MaxThrust);
+        this.thrusters = thrusters;
+    }
+
+    /// <summary>
+    /// Apply thrust evenly distributed over all engines.
+    /// </summary>
+    /// <param name="N">
+    /// The amount of thrust to apply in newton. If more thrust is requested
+    /// than available, the maximum amount of thrust will be applied.
+    /// </param>
+    public void ApplyThrust(double N) {
+        if (N == 0) {
+            this.Stop();
+            return;
+        }
+
+        if (N >= availableThrust) {
+            this.ApplyFullThrust();
+            return;
+        }
+
+        double percentagePerThruster = N / availableThrust;
+
+        this.thrusters.ForEach(t => {
+            var thrustToApply = t.MaxThrust * percentagePerThruster;
+            t.ThrustOverride = (float)thrustToApply;
+            N -= thrustToApply;
+        });
+
+        // Correct rounding errors
+        var thruster = this.thrusters[0];
+        thruster.ThrustOverride += (float)N;
+    }
+
+    public void ApplyFullThrust() {
+        thrusters.ForEach(t => t.ThrustOverride = t.MaxThrust);
+    }
+
+    public void Stop() {
+        thrusters.ForEach(t => t.ThrustOverride = 0);
+    }
+}
 
 class AdvGyro {
     public IMyTerminalBlock Gyro {
@@ -588,9 +620,4 @@ void GetDirectionTo(
 
     pitch = RPitch; // Set Pitch and Yaw outputs.
     yaw = RYaw;
-}
-
-private bool IsHydrogenThrusterWorking(IMyTerminalBlock thr) {
-    var thruster = (IMyThrust)thr;
-    return thruster.Enabled && (thruster.ThrustOverride == 0 || thruster.CurrentThrust != 0);
 }
