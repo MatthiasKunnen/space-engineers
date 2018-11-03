@@ -142,9 +142,9 @@ public void Main(string input) {
     List<AdvGyro> AdvancedGyros = new List<AdvGyro>();
     AdvancedGyros = AdvGyro.GetAllGyros(GridTerminalSystem, controlBlock, true);
 
-    Vector3D grav = controlBlock.GetNaturalGravity();
-    Vector3D pos = controlBlock.GetPosition(); // ship coords
-    double gravityStrength = Math.Sqrt(Math.Pow(grav.X, 2) + Math.Pow(grav.Y, 2) + Math.Pow(grav.Z, 2)); // gravity in m/s^2
+    Vector3D gravity = controlBlock.GetNaturalGravity();
+    Vector3D position = controlBlock.GetPosition(); // ship coords
+    double gravityStrength = gravity.Length(); // gravity in m/s^2
     double totalMass = controlBlock.CalculateShipMass().TotalMass; // ship total mass including cargo mass
     double baseMass = controlBlock.CalculateShipMass().BaseMass; // mass of the ship without cargo
     double cargoMass = totalMass - baseMass; // mass of the cargo
@@ -155,7 +155,7 @@ public void Main(string input) {
     double brakeAltitude = StopAltitude + brakeDistance; // at this altitude the ship will start slowing Down
 
     if (Autopilot) {
-        Vector3D Target = new Vector3D(pos.X - grav.X, pos.Y - grav.Y, pos.Z - grav.Z);
+        Vector3D Target = position - gravity;
 
         var x = Math.Floor(Target.GetDim(0)).ToString();
         var y = Math.Floor(Target.GetDim(1)).ToString();
@@ -169,10 +169,10 @@ public void Main(string input) {
 
         float speedMultiplier = (float)Math.Sqrt(Math.Pow(Math.Sqrt(gyroPitch * gyroPitch + gyroYaw * gyroYaw), 3)) * 0.01f;
 
-        var angularVel = controlBlock.GetShipVelocities().AngularVelocity;
-        var totAngVel = Math.Sqrt(angularVel.X * angularVel.X + angularVel.Y * angularVel.Y + angularVel.Z * angularVel.Z);
+        var angularVelocity = controlBlock.GetShipVelocities().AngularVelocity;
+        var totalAngularVelocity = angularVelocity.Length();
 
-        if (totAngVel <= RotationSpeedLimit) {
+        if (totalAngularVelocity <= RotationSpeedLimit) {
             AdvGyro.SetAllGyros(AdvancedGyros, true, gyroPitch * speedMultiplier, gyroYaw * speedMultiplier, 0);
         } else {
             AdvGyro.SetAllGyros(AdvancedGyros, true, 0, 0, 0);
