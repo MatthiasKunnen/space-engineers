@@ -11,7 +11,7 @@ Quick setup:
 
 string ascentThrustersGroup = "Thrusters UP"; // Group with liftoff thrusters
 string referenceBlock = "Remote Control - Reference";
-string lcdDisplay = "Launch control LCD"; // Optional LCD display with basic information.
+string lcdSearchName = "LCD Launch control"; // Optional LCD with basic information.
 
 
 double marginOfErrorThrust = 1.01;
@@ -35,7 +35,7 @@ List<IMyTextPanel> lcds;
 
 void Main(string args = "START") {
     controlBlock = GridTerminalSystem.GetBlockWithName(referenceBlock) as IMyShipController;
-    lcds = SearchBlocksWithName<IMyTextPanel>(lcdDisplay);
+    lcds = SearchBlocksWithName<IMyTextPanel>(lcdSearchName);
 
     if (args == "START") {
         Runtime.UpdateFrequency = UpdateFrequency.Update10;
