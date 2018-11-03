@@ -181,7 +181,7 @@ public void Main(string input) {
     double brakeAltitude = StopAltitude + brakeDistance; // at this altitude the ship will start slowing Down
 
     if (Autopilot) {
-        Vector3D Target = new Vector3D(pos.X-grav.X, pos.Y-grav.Y, pos.Z-grav.Z);
+        Vector3D Target = new Vector3D(pos.X - grav.X, pos.Y - grav.Y, pos.Z - grav.Z);
 
         var x = Math.Floor(Target.GetDim(0)).ToString();
         var y = Math.Floor(Target.GetDim(1)).ToString();
@@ -203,9 +203,7 @@ public void Main(string input) {
         } else {
             AdvGyro.SetAllGyros(AdvancedGyros, true, 0, 0, 0);
         }
-    }
 
-    if (Autopilot) {
         if (input == "fall") {
             // This is a workaround to a game bug (ship speed greater than speed limit when free falling in natural gravity)
             // Pros: your ship will not crash. Cons: you will waste a tiny amount of hydrogen.
@@ -220,9 +218,7 @@ public void Main(string input) {
                 TriggeredTimers[1] = true;
             }
         }
-    }
 
-    if (Autopilot) {
         if (altitude <= (StopAltitude + DisableMargin + AltitudeMargin)) {
             if (velocity < StopSpeed) {
                 deactivate(AdvancedGyros);
