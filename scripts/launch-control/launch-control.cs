@@ -86,7 +86,7 @@ void Main(string args = "START") {
     }
 
     speed = controlBlock.GetShipSpeed();
-    if (speed > targetSpeed * 0.995) {
+    if (speed > targetSpeed) {
         reachedTopSpeedOnce = true;
     }
 
