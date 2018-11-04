@@ -16,6 +16,12 @@ string lcdSearchName = "LCD Launch control"; // Optional LCD with basic informat
 
 double marginOfErrorThrust = 1.01;
 double targetSpeed = 100;
+
+// The percentage of variation that exist between the target speed vs actual speed
+// before thrust is applied to correct it. This exists because the calculation of
+// thrust required vs actual thrust requires differs slightly for currently
+// unknown reasons.
+double targetSpeedVariation = 0.01;
 double speed, angle;
 double gravityStrength;
 
@@ -43,6 +49,7 @@ void Main(string args = "START") {
     config.Set(ref lcdSearchName, "lcdSearchName");
     config.Set<double>(ref marginOfErrorThrust, "marginOfErrorThrust");
     config.Set<double>(ref targetSpeed, "targetSpeed");
+    config.Set<double>(ref targetSpeedVariation, "targetSpeedVariation");
     config.Set<double>(ref gravityTreshold, "gravityTreshold");
 
     controlBlock = GridTerminalSystem.GetBlockWithName(referenceBlockName) as IMyShipController;
@@ -152,7 +159,7 @@ double CalculateRequiredThrust() {
 }
 
 void ApplyThrust() {
-    var reachedTargetSpeed = speed >= 0.99 * targetSpeed;
+    var reachedTargetSpeed = speed >= (1 - targetSpeedVariation) * targetSpeed;
 
     if (reachedTopSpeedOnce && reachedTargetSpeed) {
         var requiredThrust = CalculateRequiredThrust();
