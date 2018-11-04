@@ -1,13 +1,7 @@
 // This script allows for automated override management for planetary liftoff
 // to conserve fuel.
-
-/******************************************************************************
-Quick setup:
-1. Put thrusters you want to control in group "Thrusters UP"
-2. Have remote control block on grid
-4. Run script to start.
-
-******************************************************************************/
+// For setup, see README at
+// https://github.com/MatthiasKunnen/space-engineers/blob/master/scripts/launch-control/launch-control.md
 
 string thrustersGroupName = "Thrusters UP"; // Group with liftoff thrusters
 string referenceBlockName = "Remote Control - Reference";
