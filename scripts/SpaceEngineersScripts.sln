@@ -6,10 +6,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchControl", "LaunchCont
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SharedProject", "SharedProject\SharedProject.shproj", "{0CF6E1A8-029C-4879-9D8E-A4DBBD1E38DC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuicideBurn", "SuicideBurn\SuicideBurn.csproj", "{EB7A9A35-B786-430B-B4CC-C97FC083EBB7}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		SharedProject\SharedProject.projitems*{0cf6e1a8-029c-4879-9d8e-a4dbbd1e38dc}*SharedItemsImports = 13
 		SharedProject\SharedProject.projitems*{ba775859-7e02-468f-8f92-277a820a888a}*SharedItemsImports = 4
+		SharedProject\SharedProject.projitems*{eb7a9a35-b786-430b-b4cc-c97fc083ebb7}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -17,6 +20,8 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{BA775859-7E02-468F-8F92-277A820A888A}.Debug|x64.ActiveCfg = Debug|x64
 		{BA775859-7E02-468F-8F92-277A820A888A}.Debug|x64.Build.0 = Debug|x64
+		{EB7A9A35-B786-430B-B4CC-C97FC083EBB7}.Debug|x64.ActiveCfg = Debug|x64
+		{EB7A9A35-B786-430B-B4CC-C97FC083EBB7}.Debug|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

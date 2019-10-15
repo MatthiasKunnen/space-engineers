@@ -11,7 +11,7 @@ namespace IngameScript
     {
 
         // The available thrust in N
-        double availableThrust;
+        public double availableThrust { get; private set; }
 
         List<IMyThrust> thrusters;
 
