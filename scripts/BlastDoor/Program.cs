@@ -7,12 +7,14 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
         string closeConnectorName = "Blast door closed connector"; // Name of connector on the closed side
+        string grabberGroupName = "Blast door grabbers";
         string grinderGroupName = "Blast door grinders";
         string namePrefix = ""; // Prefix is used for all name lookups
         string openConnectorName = "Blast door open connector"; // Name of connector on the open side
         string rotorGroupName = "Blast door rotors";
         string welderGroupName = "Blast door welders";
 
+        float grabberVelocity = 6.0f;
         float rotorVelocity = 10.0f;
 
         string state = null;
@@ -24,6 +26,8 @@ namespace IngameScript
         List<IMyShipWelder> welders;
 
         RotorController rotorController;
+        RotorController grabberController;
+
 
         // States
         // - OPEN
@@ -47,6 +51,8 @@ namespace IngameScript
             var config = new Config(Me.CustomData);
 
             config.Set(ref closeConnectorName, "closeConnectorName");
+            config.Set(ref grabberGroupName, "grabberGroupName");
+            config.Set(ref grabberVelocity, "grabberVelocity");
             config.Set(ref grinderGroupName, "grinderGroupName");
             config.Set(ref namePrefix, "namePrefix");
             config.Set(ref openConnectorName, "openConnectorName");
@@ -76,6 +82,8 @@ namespace IngameScript
 
                 rotorController = new RotorController(lookup.GetBlocksInGroup<IMyMotorStator>(rotorGroupName), rotorVelocity);
                 rotorController.Stop();
+                grabberController = new RotorController(lookup.GetBlocksInGroup<IMyMotorStator>(grabberGroupName), grabberVelocity);
+                grabberController.Go("BACKWARD"); // Open grabber
 
                 state = "UNKNOWN";
                 Runtime.UpdateFrequency = UpdateFrequency.Update100;
@@ -93,6 +101,7 @@ namespace IngameScript
                 grinders.ForEach(grinder => grinder.Enabled = false);
                 welders.ForEach(welder => welder.Enabled = true);
                 rotorController.Go("FORWARD");
+                grabberController.Go("FORWARD"); // Grab
                 state = "CLOSING";
                 Runtime.UpdateFrequency = UpdateFrequency.Update100;
             }
@@ -103,6 +112,7 @@ namespace IngameScript
                 welders.ForEach(welder => welder.Enabled = false);
                 grinders.ForEach(grinder => grinder.Enabled = true);
                 rotorController.Go("BACKWARD");
+                grabberController.Go("FORWARD"); // Grab
                 state = "OPENING";
                 Runtime.UpdateFrequency = UpdateFrequency.Update100;
             }
@@ -115,8 +125,10 @@ namespace IngameScript
                 case "CLOSED":
                     Runtime.UpdateFrequency = UpdateFrequency.None;
                     rotorController.Stop();
+                    grabberController.Go("BACKWARD"); // Open grabber by default
                     welders.ForEach(welder => welder.Enabled = false);
                     grinders.ForEach(grinder => grinder.Enabled = false);
+
                     break;
                 case "OPEN":
                     goto case "CLOSED";
