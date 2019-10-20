@@ -28,6 +28,8 @@ namespace IngameScript
         RotorController rotorController;
         RotorController grabberController;
 
+        List<string> accessCodes = new List<string>();
+        IMyBroadcastListener broadcastListener;
 
         // States
         // - OPEN
@@ -43,6 +45,14 @@ namespace IngameScript
         // - OPEN
         // - OBSERVE -> default, observes states, locks when available and change state accordingly
         // - RESTART -> reruns init
+
+        public Program()
+        {
+            var config = new Config(Me.CustomData);
+            var blashDoorChannel = config.Get("blastDoorChannel", "BlastDoor");
+            broadcastListener = IGC.RegisterBroadcastListener(blashDoorChannel);
+            broadcastListener.SetMessageCallback("radioCommand");
+        }
 
         public void Main(string input, UpdateType updateSource)
         {
@@ -69,6 +79,8 @@ namespace IngameScript
             if (input == "RESTART" || state == null)
             {
                 // init
+                accessCodes = new List<string>(config.Get("accessCodes", "").Split(','));
+
                 closeConnector = lookup.GetBlockWithName<IMyShipConnector>(closeConnectorName);
                 closeConnector.Enabled = true;
 
@@ -88,6 +100,25 @@ namespace IngameScript
                 state = "UNKNOWN";
                 Runtime.UpdateFrequency = UpdateFrequency.Update100;
                 Observe();
+            }
+
+            if (input == "radioCommand" && broadcastListener.HasPendingMessage)
+            {
+                var message = broadcastListener.AcceptMessage();
+
+                while (broadcastListener.HasPendingMessage)
+                {
+                    message = broadcastListener.AcceptMessage();
+                }
+
+                var data = BlastDoorRadioMessage.Deserialize(message.Data as string);
+
+                if (!accessCodes.Contains(data.AccessCode))
+                {
+                    return;
+                }
+
+                input = data.Command;
             }
 
             if (input == "OBSERVE")
