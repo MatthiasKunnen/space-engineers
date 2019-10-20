@@ -14,13 +14,13 @@ namespace IngameScript
         {
             this.dictionary = configData.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(part => part.Split('='))
-                .ToDictionary(split => split[0], split => split[1]);
+                .ToDictionary(split => split[0].ToLower(), split => split[1]);
         }
 
         public T? Get<T>(string key, T? defaultValue = null) where T : struct
         {
             string value;
-            return dictionary.TryGetValue(key, out value)
+            return dictionary.TryGetValue(key.ToLower(), out value)
                 ? (T)Convert.ChangeType(value, typeof(T))
                 : defaultValue;
         }
@@ -28,7 +28,7 @@ namespace IngameScript
         public string Get(string key, string defaultValue = null)
         {
             string value;
-            return dictionary.TryGetValue(key, out value) ? value : defaultValue;
+            return dictionary.TryGetValue(key.ToLower(), out value) ? value : defaultValue;
         }
 
         // Set if key exists
