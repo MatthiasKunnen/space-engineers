@@ -10,9 +10,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuicideBurn", "SuicideBurn\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlastDoor", "BlastDoor\BlastDoor.csproj", "{C2BAFD8E-7675-4777-9F94-D534B609B8C3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Transmitter", "Transmitter\Transmitter.csproj", "{8AB63DA2-1C44-44C0-86E4-D32EC82924BC}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		SharedProject\SharedProject.projitems*{0cf6e1a8-029c-4879-9d8e-a4dbbd1e38dc}*SharedItemsImports = 13
+		SharedProject\SharedProject.projitems*{8ab63da2-1c44-44c0-86e4-d32ec82924bc}*SharedItemsImports = 4
 		SharedProject\SharedProject.projitems*{ba775859-7e02-468f-8f92-277a820a888a}*SharedItemsImports = 4
 		SharedProject\SharedProject.projitems*{c2bafd8e-7675-4777-9f94-d534b609b8c3}*SharedItemsImports = 4
 		SharedProject\SharedProject.projitems*{eb7a9a35-b786-430b-b4cc-c97fc083ebb7}*SharedItemsImports = 4
@@ -27,6 +30,8 @@ Global
 		{EB7A9A35-B786-430B-B4CC-C97FC083EBB7}.Debug|x64.Build.0 = Debug|x64
 		{C2BAFD8E-7675-4777-9F94-D534B609B8C3}.Debug|x64.ActiveCfg = Debug|x64
 		{C2BAFD8E-7675-4777-9F94-D534B609B8C3}.Debug|x64.Build.0 = Debug|x64
+		{8AB63DA2-1C44-44C0-86E4-D32EC82924BC}.Debug|x64.ActiveCfg = Debug|x64
+		{8AB63DA2-1C44-44C0-86E4-D32EC82924BC}.Debug|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
