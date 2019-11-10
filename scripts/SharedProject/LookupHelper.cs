@@ -1,4 +1,5 @@
 using Sandbox.ModAPI.Ingame;
+using System;
 using System.Collections.Generic;
 
 namespace SharedProject {
@@ -6,7 +7,7 @@ namespace SharedProject {
         public string NamePrefix { get; set; } = "";
         public IMyGridTerminalSystem GridTerminalSystem { get; set; }
 
-        public List<T> GetBlocksInGroup<T>(string groupName) where T : class {
+        public List<T> GetBlocksInGroup<T>(string groupName, bool errorIfNotExists = false) where T : class {
             var groups = new List<IMyBlockGroup>();
             GridTerminalSystem.GetBlockGroups(groups);
 
@@ -24,7 +25,11 @@ namespace SharedProject {
                 }
             }
 
-            return null;
+            if (errorIfNotExists) {
+                throw new Exception($"No group named {groupName} found");
+            } else {
+                return null;
+            }
         }
 
         public List<T> GetBlocksOfType<T>() where T : class {
