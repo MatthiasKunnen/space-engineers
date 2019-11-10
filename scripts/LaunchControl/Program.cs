@@ -17,10 +17,8 @@ using VRage.Game;
 using VRage;
 using VRageMath;
 
-namespace IngameScript
-{
-    partial class Program : MyGridProgram
-    {
+namespace IngameScript {
+    partial class Program : MyGridProgram {
         string thrustersGroupName = "Thrusters UP"; // Group with liftoff thrusters
         string referenceBlockName = "Remote Control - Reference";
         string lcdSearchName = "LCD Launch control"; // Optional LCD with basic information.
@@ -53,8 +51,7 @@ namespace IngameScript
         IMyShipController controlBlock;
         List<IMyTextPanel> lcds;
 
-        public void Main(string args = "START")
-        {
+        public void Main(string args = "START") {
             Config config = new Config(Me.CustomData);
 
             config.Set(ref thrustersGroupName, "thrustersGroupName");
@@ -68,8 +65,7 @@ namespace IngameScript
             controlBlock = GridTerminalSystem.GetBlockWithName(referenceBlockName) as IMyShipController;
             lcds = SearchBlocksWithName<IMyTextPanel>(lcdSearchName);
 
-            if (args == "START")
-            {
+            if (args == "START") {
                 Runtime.UpdateFrequency = UpdateFrequency.Update10;
                 reachedTopSpeedOnce = false;
                 turnAndBurn = null;
@@ -80,8 +76,7 @@ namespace IngameScript
                 lcd.WritePublicText(""); // Clear LCD
             });
 
-            if (controlBlock == null)
-            {
+            if (controlBlock == null) {
                 WriteLine("No control block found on grid.");
                 WriteLine("Terminating script.");
                 return;
@@ -97,29 +92,25 @@ namespace IngameScript
             var escaped = gravityStrength <= gravityTreshold;
             gravity.Normalize();
 
-            if (gravityStrength != 0)
-            {
+            if (gravityStrength != 0) {
                 lastObservedGravity = gravity;
             }
 
-            if (thrusters == null || thrusters.Count == 0)
-            {
+            if (thrusters == null || thrusters.Count == 0) {
                 WriteLine($"No thrusters found in \"{thrustersGroupName}\" group.");
                 WriteLine("Terminating script.");
                 return;
             }
 
             speed = controlBlock.GetShipSpeed();
-            if (speed > targetSpeed)
-            {
+            if (speed > targetSpeed) {
                 reachedTopSpeedOnce = true;
             }
 
             WriteLine($"Ship speed: {Math.Round(speed, 1)} m/s");
             WriteLine($"Target: {Math.Round(targetSpeed, 1)} m/s");
 
-            if (!escaped)
-            {
+            if (!escaped) {
                 ApplyThrust();
                 gyroController.Align(gravity);
                 angle = Math.Acos(
@@ -132,10 +123,8 @@ namespace IngameScript
                 WriteLine($"Angle deviation: {Math.Round(angle)}°");
             }
 
-            if (escaped)
-            {
-                if (turnAndBurn == null)
-                {
+            if (escaped) {
+                if (turnAndBurn == null) {
                     thrustController.Stop();
                     SetDampeners(false);
                 }
@@ -144,8 +133,7 @@ namespace IngameScript
                 WriteLine($"Turn and burn: {turnAndBurn}");
             }
 
-            if (args == "STOP" || (escaped && turnAndBurn == "aligned"))
-            {
+            if (args == "STOP" || (escaped && turnAndBurn == "aligned")) {
                 thrustController.Stop();
                 gyroController.Stop();
                 SetDampeners(true);
@@ -158,8 +146,7 @@ namespace IngameScript
         /// <summary>
         /// Writes one or more lines to the output.
         /// </summary>
-        void WriteLine(params string[] input)
-        {
+        void WriteLine(params string[] input) {
             var line = String.Join("\n", input) + "\n";
             lcds.ForEach(lcd => {
                 lcd.WritePublicText(line, true);
@@ -168,51 +155,41 @@ namespace IngameScript
             Echo(line);
         }
 
-        void ClearOutput()
-        {
+        void ClearOutput() {
             lcds.ForEach(lcd => {
                 lcd.WritePublicText("");
             });
         }
 
-        double CalculateRequiredThrust()
-        {
+        double CalculateRequiredThrust() {
             var mass = controlBlock.CalculateShipMass().TotalMass;
             var requiredThrust = mass * gravityStrength;
 
             return requiredThrust;
         }
 
-        void ApplyThrust()
-        {
+        void ApplyThrust() {
             var reachedTargetSpeed = speed >= (1 - targetSpeedVariation) * targetSpeed;
 
-            if (reachedTopSpeedOnce && reachedTargetSpeed)
-            {
+            if (reachedTopSpeedOnce && reachedTargetSpeed) {
                 var requiredThrust = CalculateRequiredThrust();
                 thrustController.ApplyThrust(requiredThrust * marginOfErrorThrust);
-            }
-            else
-            {
+            } else {
                 thrustController.ApplyFullThrust();
             }
         }
 
-        List<T> GetBlocksInGroup<T>(string groupName) where T : class
-        {
+        List<T> GetBlocksInGroup<T>(string groupName) where T : class {
             var groups = new List<IMyBlockGroup>();
             GridTerminalSystem.GetBlockGroups(groups);
 
-            for (int i = 0; i < groups.Count; i++)
-            {
-                if (groups[i].Name == groupName)
-                {
+            for (int i = 0; i < groups.Count; i++) {
+                if (groups[i].Name == groupName) {
                     var groupBlocks = new List<IMyTerminalBlock>();
                     var result = new List<T>();
 
                     groups[i].GetBlocks(groupBlocks);
-                    for (int t = 0; t < groupBlocks.Count; t++)
-                    {
+                    for (int t = 0; t < groupBlocks.Count; t++) {
                         result.Add(groupBlocks[t] as T);
                     }
 
@@ -223,38 +200,32 @@ namespace IngameScript
             return null;
         }
 
-        List<T> GetBlocksOfType<T>() where T : class
-        {
+        List<T> GetBlocksOfType<T>() where T : class {
             var result = new List<T>();
             var blocks = new List<IMyTerminalBlock>();
             GridTerminalSystem.GetBlocksOfType<T>(blocks);
 
-            for (var i = 0; i < blocks.Count; i++)
-            {
+            for (var i = 0; i < blocks.Count; i++) {
                 result.Add((T)blocks[i]);
             }
 
             return result;
         }
 
-        List<T> SearchBlocksWithName<T>(string name) where T : class
-        {
+        List<T> SearchBlocksWithName<T>(string name) where T : class {
             var result = new List<T>();
             var blocks = new List<IMyTerminalBlock>();
             GridTerminalSystem.SearchBlocksOfName(name, blocks);
 
-            for (var i = 0; i < blocks.Count; i++)
-            {
+            for (var i = 0; i < blocks.Count; i++) {
                 result.Add((T)blocks[i]);
             }
 
             return result;
         }
 
-        void SetDampeners(bool enabled)
-        {
-            if (controlBlock.DampenersOverride != enabled)
-            {
+        void SetDampeners(bool enabled) {
+            if (controlBlock.DampenersOverride != enabled) {
                 controlBlock.GetActionWithName("DampenersOverride").Apply(controlBlock);
             }
         }

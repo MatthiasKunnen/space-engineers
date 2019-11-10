@@ -6,13 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using VRageMath;
 
-namespace IngameScript
-{
+namespace IngameScript {
     /// <summary>
     /// Originally from: http://forums.keenswh.com/threads/aligning-ship-to-planet-gravity.7373513/#post-1286885461
     /// </summary>
-    class GyroController
-    {
+    class GyroController {
 
         /// <summary>
         /// The alignment of the ship

@@ -2,10 +2,8 @@ using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
 using SharedProject;
 
-namespace IngameScript
-{
-    partial class Program : MyGridProgram
-    {
+namespace IngameScript {
+    partial class Program : MyGridProgram {
         string closeConnectorName = "Blast door closed connector"; // Name of connector on the closed side
         string grabberGroupName = "Blast door grabbers";
         string grinderGroupName = "Blast door grinders";
@@ -46,16 +44,14 @@ namespace IngameScript
         // - OBSERVE -> default, observes states, locks when available and change state accordingly
         // - RESTART -> reruns init
 
-        public Program()
-        {
+        public Program() {
             var config = new Config(Me.CustomData);
             var blashDoorChannel = config.Get("blastDoorChannel", "BlastDoor");
             broadcastListener = IGC.RegisterBroadcastListener(blashDoorChannel);
             broadcastListener.SetMessageCallback("radioCommand");
         }
 
-        public void Main(string input, UpdateType updateSource)
-        {
+        public void Main(string input, UpdateType updateSource) {
             input = input == "" ? "OBSERVE" : input;
 
             var config = new Config(Me.CustomData);
@@ -70,14 +66,12 @@ namespace IngameScript
             config.Set(ref rotorVelocity, "rotorVelocity");
             config.Set(ref welderGroupName, "welderGroupName");
 
-            var lookup = new LookupHelper
-            {
+            var lookup = new LookupHelper {
                 GridTerminalSystem = GridTerminalSystem,
                 NamePrefix = namePrefix,
             };
 
-            if (input == "RESTART" || state == null)
-            {
+            if (input == "RESTART" || state == null) {
                 // init
                 accessCodes = new List<string>(config.Get("accessCodes", "").Split(','));
 
@@ -102,31 +96,25 @@ namespace IngameScript
                 Observe();
             }
 
-            if (input == "radioCommand" && broadcastListener.HasPendingMessage)
-            {
+            if (input == "radioCommand" && broadcastListener.HasPendingMessage) {
                 var message = broadcastListener.AcceptMessage();
 
-                while (broadcastListener.HasPendingMessage)
-                {
+                while (broadcastListener.HasPendingMessage) {
                     message = broadcastListener.AcceptMessage();
                 }
 
                 var data = BlastDoorRadioMessage.Deserialize(message.Data as string);
 
-                if (!accessCodes.Contains(data.AccessCode))
-                {
+                if (!accessCodes.Contains(data.AccessCode)) {
                     return;
                 }
 
                 input = data.Command;
             }
 
-            if (input == "OBSERVE")
-            {
+            if (input == "OBSERVE") {
                 Observe();
-            }
-            else if (input == "CLOSE" && state != "CLOSING" && state != "CLOSED")
-            {
+            } else if (input == "CLOSE" && state != "CLOSING" && state != "CLOSED") {
                 openConnector.Enabled = false;
                 closeConnector.Enabled = true;
                 grinders.ForEach(grinder => grinder.Enabled = false);
@@ -135,9 +123,7 @@ namespace IngameScript
                 grabberController.Go("FORWARD"); // Grab
                 state = "CLOSING";
                 Runtime.UpdateFrequency = UpdateFrequency.Update100;
-            }
-            else if (input == "OPEN" && state != "OPENING" && state != "OPEN")
-            {
+            } else if (input == "OPEN" && state != "OPENING" && state != "OPEN") {
                 openConnector.Enabled = true;
                 closeConnector.Enabled = false;
                 welders.ForEach(welder => welder.Enabled = false);
@@ -149,10 +135,8 @@ namespace IngameScript
             }
         }
 
-        void Observe()
-        {
-            switch (state)
-            {
+        void Observe() {
+            switch (state) {
                 case "CLOSED":
                     Runtime.UpdateFrequency = UpdateFrequency.None;
                     rotorController.Stop();
@@ -176,20 +160,16 @@ namespace IngameScript
             }
         }
 
-        void CheckClosed()
-        {
+        void CheckClosed() {
             closeConnector.Connect();
-            if (closeConnector.Status == MyShipConnectorStatus.Connected)
-            {
+            if (closeConnector.Status == MyShipConnectorStatus.Connected) {
                 state = "CLOSED";
             }
         }
 
-        void CheckOpen()
-        {
+        void CheckOpen() {
             openConnector.Connect();
-            if (openConnector.Status == MyShipConnectorStatus.Connected)
-            {
+            if (openConnector.Status == MyShipConnectorStatus.Connected) {
                 state = "OPEN";
             }
         }

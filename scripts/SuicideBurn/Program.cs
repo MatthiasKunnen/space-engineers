@@ -17,10 +17,8 @@ using VRage.Game;
 using VRage;
 using VRageMath;
 
-namespace IngameScript
-{
-    partial class Program : MyGridProgram
-    {
+namespace IngameScript {
+    partial class Program : MyGridProgram {
         // Originally from https://steamcommunity.com/sharedfiles/filedetails/?id=767891298
 
         /*How to set it up:
@@ -134,13 +132,11 @@ namespace IngameScript
         List<IMyGyro> gyros;
         List<IMyTextPanel> lcds;
 
-        public void Main(string input)
-        {
+        public void Main(string input) {
             lcds = SearchBlocksWithName<IMyTextPanel>(lcdSearchName);
             ClearOutput();
 
-            if (input == "start")
-            {
+            if (input == "start") {
                 Runtime.UpdateFrequency = UpdateFrequency.Update10;
                 Autopilot = true;
             }
@@ -152,25 +148,18 @@ namespace IngameScript
 
             Vector3D velocity3D = controlBlock.GetShipVelocities().LinearVelocity;
 
-            if (!InsideNaturalGravity)
-            {
-                if (Autopilot)
-                {
+            if (!InsideNaturalGravity) {
+                if (Autopilot) {
                     WriteLine("Waiting for entering natural gravity");
-                    if (input == "stop")
-                    {
+                    if (input == "stop") {
                         Autopilot = false;
                         WriteLine("Autopilot deactivated (manually)");
                     }
                 }
                 return;
-            }
-            else
-            {
-                if (Autopilot && AutoFall)
-                {
-                    if (!AutoFallUsed)
-                    {
+            } else {
+                if (Autopilot && AutoFall) {
+                    if (!AutoFallUsed) {
                         input = "fall";
                         AutoFallUsed = true;
                     }
@@ -195,35 +184,28 @@ namespace IngameScript
             double brakeDistance = CalculateBrakeDistance(gravityStrength, actualMass, altitude, thrustController.availableThrust, velocity);
             double brakeAltitude = StopAltitude + brakeDistance; // at this altitude the ship will start slowing Down
 
-            if (Autopilot)
-            {
+            if (Autopilot) {
                 gyroController.Align(gravity);
 
-                if (input == "fall")
-                {
+                if (input == "fall") {
                     // This is a workaround to a game bug (ship speed greater than speed limit when free falling in natural gravity)
                     // Pros: your ship will not crash. Cons: you will waste a tiny amount of hydrogen.
                     thrustController.ApplyThrust(1);
                 }
 
-                if (altitude <= (brakeAltitude + AltitudeMargin))
-                {
+                if (altitude <= (brakeAltitude + AltitudeMargin)) {
                     // BRAKE!!!
                     thrustController.ApplyFullThrust(); // Maybe just enable dampeners
                 }
 
-                if (altitude <= (StopAltitude + DisableMargin + AltitudeMargin))
-                {
-                    if (velocity < StopSpeed)
-                    {
+                if (altitude <= (StopAltitude + DisableMargin + AltitudeMargin)) {
+                    if (velocity < StopSpeed) {
                         gyroController.Stop();
                         WriteLine("Autopilot deactivated (automatically)");
                     }
 
-                    if (SmartDeactivation)
-                    {
-                        if (OldVelocity3D.X * velocity3D.X < 0 || OldVelocity3D.Y * velocity3D.Y < 0 || OldVelocity3D.Z * velocity3D.Z < 0)
-                        {
+                    if (SmartDeactivation) {
+                        if (OldVelocity3D.X * velocity3D.X < 0 || OldVelocity3D.Y * velocity3D.Y < 0 || OldVelocity3D.Z * velocity3D.Z < 0) {
                             gyroController.Stop();
                             WriteLine("Autopilot deactivated (automatically)");
                         }
@@ -233,8 +215,7 @@ namespace IngameScript
 
             OldVelocity3D = velocity3D;
 
-            if (input == "stop")
-            {
+            if (input == "stop") {
                 Runtime.UpdateFrequency = UpdateFrequency.None;
                 gyroController.Stop();
                 thrustController.Stop();
@@ -242,8 +223,7 @@ namespace IngameScript
             }
         }
 
-        void ClearOutput()
-        {
+        void ClearOutput() {
             lcds.ForEach(lcd => {
                 lcd.WritePublicText("");
             });
@@ -252,8 +232,7 @@ namespace IngameScript
         /// <summary>
         /// Writes one or more lines to the output.
         /// </summary>
-        void WriteLine(params string[] input)
-        {
+        void WriteLine(params string[] input) {
             var line = String.Join("\n", input) + "\n";
             lcds.ForEach(lcd => {
                 lcd.WritePublicText(line, true);
@@ -262,8 +241,7 @@ namespace IngameScript
             Echo(line);
         }
 
-        double CalculateBrakeDistance(double gravityStrength, double actualMass, double altitude, double maxthrust, double speed)
-        {
+        double CalculateBrakeDistance(double gravityStrength, double actualMass, double altitude, double maxthrust, double speed) {
             double shipWeight = actualMass * gravityStrength;
             double brakeForce = maxthrust - shipWeight;
             double deceleration = brakeForce / actualMass;
@@ -272,21 +250,17 @@ namespace IngameScript
             return brakeDistance;
         }
 
-        List<T> GetBlocksInGroup<T>(string groupName) where T : class
-        {
+        List<T> GetBlocksInGroup<T>(string groupName) where T : class {
             var groups = new List<IMyBlockGroup>();
             GridTerminalSystem.GetBlockGroups(groups);
 
-            for (int i = 0; i < groups.Count; i++)
-            {
-                if (groups[i].Name == groupName)
-                {
+            for (int i = 0; i < groups.Count; i++) {
+                if (groups[i].Name == groupName) {
                     var groupBlocks = new List<IMyTerminalBlock>();
                     var result = new List<T>();
 
                     groups[i].GetBlocks(groupBlocks);
-                    for (int t = 0; t < groupBlocks.Count; t++)
-                    {
+                    for (int t = 0; t < groupBlocks.Count; t++) {
                         result.Add(groupBlocks[t] as T);
                     }
 
@@ -297,8 +271,7 @@ namespace IngameScript
             return null;
         }
 
-        List<T> GetBlocksOfType<T>() where T : class
-        {
+        List<T> GetBlocksOfType<T>() where T : class {
             var result = new List<T>();
             var blocks = new List<IMyTerminalBlock>();
             GridTerminalSystem.GetBlocksOfType<T>(blocks);
@@ -308,8 +281,7 @@ namespace IngameScript
             return result;
         }
 
-        List<T> SearchBlocksWithName<T>(string name) where T : class
-        {
+        List<T> SearchBlocksWithName<T>(string name) where T : class {
             var result = new List<T>();
             var blocks = new List<IMyTerminalBlock>();
             GridTerminalSystem.SearchBlocksOfName(name, blocks);

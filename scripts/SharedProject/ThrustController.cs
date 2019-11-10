@@ -5,20 +5,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IngameScript
-{
-    class ThrustController
-    {
+namespace IngameScript {
+    class ThrustController {
 
         // The available thrust in N
         public double availableThrust { get; private set; }
 
         List<IMyThrust> thrusters;
 
-        public ThrustController(List<IMyThrust> thrusters)
-        {
-            if (thrusters.Count == 0)
-            {
+        public ThrustController(List<IMyThrust> thrusters) {
+            if (thrusters.Count == 0) {
                 throw new ArgumentException("At least one thruster required");
             }
 
@@ -33,16 +29,13 @@ namespace IngameScript
         /// The amount of thrust to apply in newton. If more thrust is requested
         /// than available, the maximum amount of thrust will be applied.
         /// </param>
-        public void ApplyThrust(double N)
-        {
-            if (N == 0)
-            {
+        public void ApplyThrust(double N) {
+            if (N == 0) {
                 this.Stop();
                 return;
             }
 
-            if (N >= availableThrust)
-            {
+            if (N >= availableThrust) {
                 this.ApplyFullThrust();
                 return;
             }
@@ -60,13 +53,11 @@ namespace IngameScript
             thruster.ThrustOverride += (float)N;
         }
 
-        public void ApplyFullThrust()
-        {
+        public void ApplyFullThrust() {
             thrusters.ForEach(t => t.ThrustOverride = t.MaxThrust);
         }
 
-        public void Stop()
-        {
+        public void Stop() {
             thrusters.ForEach(t => t.ThrustOverride = 0);
         }
     }
