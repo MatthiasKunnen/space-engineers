@@ -1,6 +1,6 @@
 using Sandbox.ModAPI.Ingame;
-using System.Collections.Generic;
 using SharedProject;
+using System.Collections.Generic;
 
 namespace IngameScript {
     partial class Program : MyGridProgram {

@@ -1,7 +1,5 @@
-﻿using Sandbox.ModAPI.Ingame;
-using System;
+using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharedProject {
     public class LookupHelper {
