@@ -44,8 +44,15 @@ namespace SharedProject {
             return result;
         }
 
-        public T GetBlockWithName<T>(string name) where T : class {
-            return GridTerminalSystem.GetBlockWithName($"{NamePrefix}{name}") as T;
+
+        public T GetBlockWithName<T>(string name, bool errorIfNotExists = false) where T : class {
+            var block = GridTerminalSystem.GetBlockWithName($"{NamePrefix}{name}") as T;
+
+            if (block == null && errorIfNotExists) {
+                throw new Exception($"Block with name {name} not found");
+            }
+
+            return block;
         }
 
         public List<T> SearchBlocksWithName<T>(string name) where T : class {
