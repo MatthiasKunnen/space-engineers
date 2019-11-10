@@ -13,6 +13,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Config.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LookupHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MurmurHash2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThrustController.cs" />
   </ItemGroup>
   <ItemGroup>
