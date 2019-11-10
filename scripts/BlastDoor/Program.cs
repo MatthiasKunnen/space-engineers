@@ -54,24 +54,24 @@ namespace IngameScript {
         public void Main(string input, UpdateType updateSource) {
             input = input == "" ? "OBSERVE" : input;
 
-            var config = new Config(Me.CustomData);
-
-            config.Set(ref closeConnectorName, "closeConnectorName");
-            config.Set(ref grabberGroupName, "grabberGroupName");
-            config.Set(ref grabberVelocity, "grabberVelocity");
-            config.Set(ref grinderGroupName, "grinderGroupName");
-            config.Set(ref namePrefix, "namePrefix");
-            config.Set(ref openConnectorName, "openConnectorName");
-            config.Set(ref rotorGroupName, "rotorGroupName");
-            config.Set(ref rotorVelocity, "rotorVelocity");
-            config.Set(ref welderGroupName, "welderGroupName");
-
-            var lookup = new LookupHelper {
-                GridTerminalSystem = GridTerminalSystem,
-                NamePrefix = namePrefix,
-            };
-
             if (input == "RESTART" || state == null) {
+                var config = new Config(Me.CustomData);
+
+                config.Set(ref closeConnectorName, "closeConnectorName");
+                config.Set(ref grabberGroupName, "grabberGroupName");
+                config.Set(ref grabberVelocity, "grabberVelocity");
+                config.Set(ref grinderGroupName, "grinderGroupName");
+                config.Set(ref namePrefix, "namePrefix");
+                config.Set(ref openConnectorName, "openConnectorName");
+                config.Set(ref rotorGroupName, "rotorGroupName");
+                config.Set(ref rotorVelocity, "rotorVelocity");
+                config.Set(ref welderGroupName, "welderGroupName");
+
+                var lookup = new LookupHelper {
+                    GridTerminalSystem = GridTerminalSystem,
+                    NamePrefix = namePrefix,
+                };
+
                 // init
                 accessCodes = new List<string>(config.Get("accessCodes", "").Split(','));
 
