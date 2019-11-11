@@ -43,13 +43,21 @@ namespace IngameScript {
 
         Dictionary<string, BlueprintInfo> _blueprints;
 
+        BlueprintInfo _previousBlueprint = null;
+
+        string _previousBlueprintId = null;
+
         string _state = "CHECK_BLUEPRINT";
 
+        int i = 1;
+
         public Program() {
+            Runtime.UpdateFrequency = UpdateFrequency.Update100;
             Main("PARSE");
         }
 
-        public void Main(string argument) {
+        public void Main(string argument = "CHECK") {
+            Echo((i++).ToString());
             if (argument == "PARSE") {
                 MyIniParseResult result;
                 if (!_ini.TryParse(Me.CustomData, out result)) {
@@ -76,53 +84,66 @@ namespace IngameScript {
                 _calculatorAssembler = lookup.GetBlockWithName<IMyAssembler>(calculatorAssemblerName, true);
                 _lcdBlueprintInfo = lookup.GetBlockWithName<IMyTextSurface>(lcdBlueprintInfoName, true);
                 _lcdComponentStatus = lookup.GetBlockWithName<IMyTextSurface>(lcdComponentStatusName, true);
-                _pistons = lookup.GetBlocksInGroup<IMyExtendedPistonBase>(pistonGroupName);
+                _pistons = lookup.GetBlocksInGroup<IMyExtendedPistonBase>(pistonGroupName, true);
                 _productionAssembler = lookup.GetBlockWithName<IMyAssembler>(productionAssemblerName, true);
                 _projector = lookup.GetBlockWithName<IMyProjector>(projectorName, true);
                 _weldEndedTimer = lookup.GetBlockWithName<IMyTimerBlock>(weldEndedTimerName);
                 _weldReadyTimer = lookup.GetBlockWithName<IMyTimerBlock>(weldReadyTimerName);
-                _welders = lookup.GetBlocksInGroup<IMyShipWelder>(welderGroupName);
+                _welders = lookup.GetBlocksInGroup<IMyShipWelder>(welderGroupName, true);
 
-                _blueprints = new Dictionary<string, BlueprintInfo>();
-                var sections = new List<string>();
-                _ini.GetSections(sections);
-                sections.ForEach(section => {
-                    var keys = new List<MyIniKey>();
-                    _ini.GetKeys(section, keys);
-                    var blocks = new Dictionary<string, int>();
-
-                    keys.ForEach(key => {
-                        if (key.Name.StartsWith("MyObject")) {
-                            blocks.Add(key.Name, _ini.Get(section, key.Name).ToInt32());
-                        }
-                    });
-
-                    _blueprints.Add(section, new BlueprintInfo() {
-                        Blocks = blocks,
-                        Name = _ini.Get(section, "Name").ToString(),
-                    });
-                });
+                ExtractBlueprints();
             }
 
             var currentBpId = GetProjectorBlueprintId();
-            var currentBpName = _blueprints.GetValueOrDefault(currentBpId, null)?.Name ?? "Unknown";
-            _lcdBlueprintInfo.WriteText($@"Selected blueprint: {currentBpName}
-Current blueprint ID: {currentBpId}");
-            Echo($"Blueprint id: {GetProjectorBlueprintId()}");
-            Echo($"Known blueprint IDS: {String.Join(", ", _blueprints.Keys)}");
+            var currentBlueprint = _blueprints.GetValueOrDefault(currentBpId);
+
+            if (currentBlueprint != _previousBlueprint && currentBlueprint != null) {
+                _state = "CHECK_BLUEPRINT";
+               
+                _projector.ProjectionOffset = currentBlueprint.ProjectionOffset;
+                _projector.ProjectionRotation = currentBlueprint.ProjectionRotation;
+                _projector.UpdateOffsetAndRotation();
+            }
+
+            _previousBlueprint = currentBlueprint;
+
+            ResourceCalculator.CalculateResources(_calculatorAssembler, currentBlueprint.Blocks, Echo).ForEach(item => {
+                Echo($"{item.BlueprintId}: {item.Amount}");
+            });
 
             switch (argument) {
                 case "CHECK":
+                    if (currentBlueprint == null) break;
                     if (_state == "CHECK_BLUEPRINT") {
-                        Echo($"Blueprint id: {GetProjectorBlueprintId()}");
+
+                    } else if (_state == "PREPARING") {
+
                     }
+
+                    break;
+                case "SAVE_OFFSET":
+                    if (currentBlueprint == null) break;
+                    currentBlueprint.ProjectionOffset = _projector.ProjectionOffset;
+                    currentBlueprint.ProjectionRotation = _projector.ProjectionRotation;
+                    currentBlueprint.Save(_ini);
+                    Me.CustomData = _ini.ToString();
+
                     break;
             }
+          
 
-            /*
-            var block = GridTerminalSystem.GetBlockWithName("Projector weld wall") as IMyProjector;
-            
-            */
+            _lcdBlueprintInfo.WriteText($@"Selected blueprint: {currentBlueprint?.Name ?? "Unknown"}
+Current blueprint ID: {currentBpId}
+State: {_state}
+Projection Offset {_projector.ProjectionOffset}
+Rotation {_projector.ProjectionRotation}
+BP Offset {currentBlueprint?.ProjectionOffset}
+BP Rotation {currentBlueprint?.ProjectionRotation}");
+        }
+
+        void Stop() {
+            _pistons.ForEach(piston => piston.Enabled = false);
+            _welders.ForEach(welder => welder.Enabled = false);
         }
 
         string GetProjectorBlueprintId() {
@@ -130,6 +151,7 @@ Current blueprint ID: {currentBpId}");
             var enumerator = _projector.RemainingBlocksPerType.GetEnumerator();
             while (enumerator.MoveNext()) {
                 var item = enumerator.Current;
+                Echo($"{item.Key.ToString()}");
                 remainingBlocks.Add($"{item.Key}={item.Value}");
             }
 
@@ -137,6 +159,19 @@ Current blueprint ID: {currentBpId}");
             var projectionInfo = String.Join(", ", remainingBlocks);
 
             return MurmurHash2.Hash(projectionInfo).ToString("X");
+        }
+
+        void ExtractBlueprints() {
+            _blueprints = new Dictionary<string, BlueprintInfo>();
+            var sections = new List<string>();
+            _ini.GetSections(sections);
+            sections.ForEach(section => {
+                if (section.ToLower() == "general") {
+                    return;
+                }
+
+                _blueprints.Add(section, BlueprintInfo.FromIni(_ini, section));
+            });
         }
     }
 }

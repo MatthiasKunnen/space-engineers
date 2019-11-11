@@ -55,6 +55,8 @@ Run the `RETRACT` command to recall the projector by compressing the pistons.
 The config format is that of an INI file which uses `key=value` lines. No spaces should exists
 around the `=`.
 
+The following keys can be configured in the `general` section.
+
 | Key                             | Default                     | Value                                                                                                                                                                                |
 |---------------------------------|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | CalculatorAssembler             | WeldWallCalculatorAssembler | The name of the assembler used in calculations. This assembler should not produce anything. Disconnect it                                                                            |
@@ -68,3 +70,15 @@ around the `=`.
 | WeldReadyTimer                  | WeldWallReadyTimer          | The name of the optional timer block that will be run when welding can start. Execute the WELD argument to start welding                                                             |
 | WeldVelocity                    | 0.1                         | The velocity of the welding in m/s                                                                                                                                                   |
 | WelderGroup                     | WeldWallWelders             | The name of the group containing the weld wall welders                                                                                                                               |
+
+The following keys can be configured for each blueprint
+
+| Key                             | Default                     | Value                                                                                                                                                                                |
+|---------------------------------|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Name                            |                             | The name of the blueprint                                                                                                                                                            |
+| ProjectionOffsetHorizontal      | 0                           | Projection offset across the x axis                                                                                                                                                  |
+| ProjectionOffsetVertical        | 0                           | Projection offset across the y axis                                                                                                                                                  |
+| ProjectionOffsetForward         | 0                           | Projection offset across the z axis                                                                                                                                                  |
+| ProjectionPitch                 | 0                           | Projection pitch in degrees                                                                                                                                                          |
+| ProjectionYaw                   | 0                           | Projection yaw in degrees                                                                                                                                                            |
+| ProjectionRoll                  | 0                           | Projection roll in degrees                                                                                                                                                           |
