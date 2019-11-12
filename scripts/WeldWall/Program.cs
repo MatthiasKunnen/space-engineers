@@ -107,10 +107,6 @@ namespace IngameScript {
 
             _previousBlueprint = currentBlueprint;
 
-            ResourceCalculator.CalculateResources(_calculatorAssembler, currentBlueprint.Blocks, Echo).ForEach(item => {
-                Echo($"{item.BlueprintId}: {item.Amount}");
-            });
-
             switch (argument) {
                 case "CHECK":
                     if (currentBlueprint == null) break;
@@ -128,6 +124,16 @@ namespace IngameScript {
                     currentBlueprint.Save(_ini);
                     Me.CustomData = _ini.ToString();
 
+                    break;
+                case "SAVE_REQUIREMENTS":
+                    if (currentBlueprint == null) break;
+                    currentBlueprint.SetBlocksFromAssembler(_calculatorAssembler);
+                    currentBlueprint.Save(_ini);
+                    Me.CustomData = _ini.ToString();
+
+                    break;
+                case "STOP":
+                    Stop();
                     break;
             }
           
@@ -151,7 +157,6 @@ BP Rotation {currentBlueprint?.ProjectionRotation}");
             var enumerator = _projector.RemainingBlocksPerType.GetEnumerator();
             while (enumerator.MoveNext()) {
                 var item = enumerator.Current;
-                Echo($"{item.Key.ToString()}");
                 remainingBlocks.Add($"{item.Key}={item.Value}");
             }
 
@@ -170,7 +175,7 @@ BP Rotation {currentBlueprint?.ProjectionRotation}");
                     return;
                 }
 
-                _blueprints.Add(section, BlueprintInfo.FromIni(_ini, section));
+                _blueprints.Add(section, BlueprintInfo.FromIni(_ini, section, Echo));
             });
         }
     }
