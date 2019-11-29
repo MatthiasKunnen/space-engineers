@@ -114,6 +114,8 @@ namespace IngameScript {
                 _projector.ProjectionOffset = currentBlueprint.ProjectionOffset;
                 _projector.ProjectionRotation = currentBlueprint.ProjectionRotation;
                 _projector.UpdateOffsetAndRotation();
+
+                UpdateComponentList(currentBlueprint);
             }
 
             _previousBlueprint = currentBlueprint;
@@ -144,13 +146,7 @@ namespace IngameScript {
                         break;
                     }
 
-                    var requirements = new List<string>();
-
-                    foreach (var block in currentBlueprint.Blocks) {
-                        requirements.Add($"+{BlueprintIdToLcd2Name(block.Key)}:{block.Value}");
-                    }
-
-                    _lcdComponentStatus.CustomData = $"MissingList * {String.Join(" ", requirements)}";
+                    UpdateComponentList(currentBlueprint);
                     _output.Add("Send missing items to assemblers manually");
                     _state = "Preparing";
 
@@ -265,6 +261,16 @@ State: {_state}
         void DistributePistonVelocity(double velocity) {
             float perPiston = (float)(velocity / _pistons.Count);
             _pistons.ForEach(p => p.Velocity = perPiston);
+        }
+
+        void UpdateComponentList(BlueprintInfo blueprint) {
+            var requirements = new List<string>();
+
+            foreach (var block in blueprint.Blocks) {
+                requirements.Add($"+{BlueprintIdToLcd2Name(block.Key)}:{block.Value}");
+            }
+
+            _lcdComponentStatus.CustomData = $"MissingList * {String.Join(" ", requirements)}";
         }
     }
 }
