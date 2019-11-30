@@ -219,9 +219,7 @@ State: {_state}
         string GetProjectorBlueprintId(IMyProjector projector) {
             var remainingBlocks = new List<string>();
 
-            var enumerator = projector.RemainingBlocksPerType.GetEnumerator();
-            while (enumerator.MoveNext()) {
-                var item = enumerator.Current;
+            foreach (var item in projector.RemainingBlocksPerType) {
                 remainingBlocks.Add($"{item.Key}={item.Value}");
             }
 
