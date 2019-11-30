@@ -202,11 +202,13 @@ namespace IngameScript {
             }
 
 
-            _lcdBlueprintInfo.WriteText($@"Loaded: {currentBlueprint?.Name ?? "Unknown"}
+            _lcdBlueprintInfo.WriteText($@"
+{(currentBlueprint == null ? "Unknown blueprint" : (currentBlueprint.Name ?? "Unnamed blueprint"))}
 Blueprint ID: {currentBpId}
 State: {_state}
 
-{String.Join("\n", _output.ToArray())}");
+{String.Join("\n", _output.ToArray())}
+".Trim());
         }
 
         void Stop() {
