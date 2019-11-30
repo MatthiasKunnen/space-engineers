@@ -262,11 +262,7 @@ State: {_state}
             name = name.Substring(name.IndexOf('/') + 1); // Remove prefix MyObjectBuilder_BlueprintDefinition/
             name = name.Replace("Component", ""); // Remove component in name
 
-
-            string mappedValue;
-            mapper.TryGetValue(name, out mappedValue);
-
-            return (name ?? mappedValue).ToLower();
+            return (name ?? mapper.GetValueOrDefault(name)).ToLower();
         }
 
         void DistributePistonVelocity(double velocity) {
