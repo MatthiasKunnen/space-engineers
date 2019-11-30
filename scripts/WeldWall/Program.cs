@@ -23,8 +23,11 @@ namespace IngameScript {
         readonly string _productionAssemblerName = "WeldWallProductionAssembler";
         IMyAssembler _productionAssembler;
 
-        readonly string _projectorName = "WeldWallProjector";
-        IMyProjector _projector;
+        readonly string _projectorLargeName = "WeldWallProjectorLarge";
+        IMyProjector _projectorLarge;
+
+        readonly string _projectorSmallName = "WeldWallProjectorSmall";
+        IMyProjector _projectorSmall;
 
         readonly double _retractVelocity = 4;
 
@@ -81,7 +84,8 @@ namespace IngameScript {
                 var lcdComponentStatusName = _ini.Get("general", "LcdComponentStatus").ToString(_lcdComponentStatusName);
                 var pistonGroupName = _ini.Get("general", "PistonGroup").ToString(_pistonGroupName);
                 var productionAssemblerName = _ini.Get("general", "ProductionAssembler").ToString(_productionAssemblerName);
-                var projectorName = _ini.Get("general", "Projector").ToString(_projectorName);
+                var projectorLargeName = _ini.Get("general", "ProjectorLarge").ToString(_projectorLargeName);
+                var projectorSmallName = _ini.Get("general", "ProjectorSmall").ToString(_projectorSmallName);
                 var retractVelocity = _ini.Get("general", "RetractVelocity").ToDouble(_retractVelocity);
                 var weldEndedTimerName = _ini.Get("general", "WeldEndedTimer").ToString(_weldEndedTimerName);
                 var weldReadyTimerName = _ini.Get("general", "WeldReadyTimer").ToString(_weldReadyTimerName);
@@ -97,7 +101,8 @@ namespace IngameScript {
                 _lcdComponentStatus = lookup.GetBlockWithName<IMyTextPanel>(lcdComponentStatusName, true);
                 _pistons = lookup.GetBlocksInGroup<IMyExtendedPistonBase>(pistonGroupName, true);
                 _productionAssembler = lookup.GetBlockWithName<IMyAssembler>(productionAssemblerName, true);
-                _projector = lookup.GetBlockWithName<IMyProjector>(projectorName, true);
+                _projectorLarge = lookup.GetBlockWithName<IMyProjector>(projectorLargeName, true);
+                _projectorSmall = lookup.GetBlockWithName<IMyProjector>(projectorSmallName);
                 _weldEndedTimer = lookup.GetBlockWithName<IMyTimerBlock>(weldEndedTimerName);
                 _weldReadyTimer = lookup.GetBlockWithName<IMyTimerBlock>(weldReadyTimerName);
                 _welders = lookup.GetBlocksInGroup<IMyShipWelder>(welderGroupName, true);
@@ -105,15 +110,18 @@ namespace IngameScript {
                 ExtractBlueprints();
             }
 
-            var currentBpId = _state == "Preparing" || _state == "Welding" ? _previousBlueprint.ID : GetProjectorBlueprintId();
+            var projector = GetActiveProjector();
+            var currentBpId = _state == "Preparing" || _state == "Welding"
+                ? _previousBlueprint.ID
+                : GetProjectorBlueprintId(projector);
             var currentBlueprint = _blueprints.GetValueOrDefault(currentBpId);
 
             if (currentBlueprint != _previousBlueprint && currentBlueprint != null) {
                 _state = "CheckBlueprint";
 
-                _projector.ProjectionOffset = currentBlueprint.ProjectionOffset;
-                _projector.ProjectionRotation = currentBlueprint.ProjectionRotation;
-                _projector.UpdateOffsetAndRotation();
+                projector.ProjectionOffset = currentBlueprint.ProjectionOffset;
+                projector.ProjectionRotation = currentBlueprint.ProjectionRotation;
+                projector.UpdateOffsetAndRotation();
 
                 UpdateComponentList(currentBlueprint);
             }
@@ -156,8 +164,8 @@ namespace IngameScript {
                         _output.Add("Can't save offset when no blueprint is loaded");
                         break;
                     }
-                    currentBlueprint.ProjectionOffset = _projector.ProjectionOffset;
-                    currentBlueprint.ProjectionRotation = _projector.ProjectionRotation;
+                    currentBlueprint.ProjectionOffset = projector.ProjectionOffset;
+                    currentBlueprint.ProjectionRotation = projector.ProjectionRotation;
                     currentBlueprint.Save(_ini);
                     Me.CustomData = _ini.ToString();
 
@@ -207,9 +215,10 @@ State: {_state}
             _state = "CheckBlueprint";
         }
 
-        string GetProjectorBlueprintId() {
+        string GetProjectorBlueprintId(IMyProjector projector) {
             var remainingBlocks = new List<string>();
-            var enumerator = _projector.RemainingBlocksPerType.GetEnumerator();
+
+            var enumerator = projector.RemainingBlocksPerType.GetEnumerator();
             while (enumerator.MoveNext()) {
                 var item = enumerator.Current;
                 remainingBlocks.Add($"{item.Key}={item.Value}");
@@ -261,6 +270,14 @@ State: {_state}
         void DistributePistonVelocity(double velocity) {
             float perPiston = (float)(velocity / _pistons.Count);
             _pistons.ForEach(p => p.Velocity = perPiston);
+        }
+
+        IMyProjector GetActiveProjector() {
+            if (_projectorLarge.Enabled && _projectorSmall.Enabled) {
+                Echo($"Warning: Both projectors enabled, large projector received preference");
+            }
+
+            return !_projectorLarge.Enabled && _projectorSmall.Enabled ? _projectorSmall : _projectorLarge;
         }
 
         void UpdateComponentList(BlueprintInfo blueprint) {
