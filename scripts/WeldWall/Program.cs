@@ -2,6 +2,7 @@ using Sandbox.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using VRage.Game.ModAPI.Ingame.Utilities;
 
 namespace IngameScript {
@@ -22,11 +23,11 @@ namespace IngameScript {
         readonly string _productionAssemblerName = "WeldWallProductionAssembler";
         IMyAssembler _productionAssembler;
 
-        readonly string _projectorLargeName = "WeldWallProjectorLarge";
-        IMyProjector _projectorLarge;
+        IMyProjector _projector;
 
-        readonly string _projectorSmallName = "WeldWallProjectorSmall";
-        IMyProjector _projectorSmall;
+        string _projectorName;
+
+        Dictionary<string, IMyProjector> _projectors;
 
         readonly double _retractVelocity = 4;
 
@@ -57,12 +58,13 @@ namespace IngameScript {
 
 
         public Program() {
-            Runtime.UpdateFrequency = UpdateFrequency.Update100;
             Main("PARSE");
+            Runtime.UpdateFrequency = UpdateFrequency.Update100;
         }
 
-        public void Main(string argument = "CHECK") {
-            argument = argument == "" ? "CHECK" : argument;
+        public void Main(string argumentString = "CHECK") {
+            var arguments = argumentString.Split(' ');
+            var argument = arguments[0] == "" ? "CHECK" : arguments[0];
             Echo((executionCounter++).ToString());
 
             if (argument != "CHECK" || _state != _previousState) {
@@ -72,6 +74,7 @@ namespace IngameScript {
             _previousState = _state;
 
             if (argument == "PARSE") {
+                Runtime.UpdateFrequency = UpdateFrequency.None;
                 MyIniParseResult result;
                 if (!_ini.TryParse(Me.CustomData, out result)) {
                     Echo($"CustomData parsing error: \nLine {result.LineNo}");
@@ -83,8 +86,7 @@ namespace IngameScript {
                 var lcdComponentStatusName = _ini.Get("general", "LcdComponentStatus").ToString(_lcdComponentStatusName);
                 var pistonGroupName = _ini.Get("general", "PistonGroup").ToString(_pistonGroupName);
                 var productionAssemblerName = _ini.Get("general", "ProductionAssembler").ToString(_productionAssemblerName);
-                var projectorLargeName = _ini.Get("general", "ProjectorLarge").ToString(_projectorLargeName);
-                var projectorSmallName = _ini.Get("general", "ProjectorSmall").ToString(_projectorSmallName);
+                var projectors = _ini.Get("general", "Projectors").ToString("Large:WeldWallLargeProjector");
                 var retractVelocity = _ini.Get("general", "RetractVelocity").ToDouble(_retractVelocity);
                 var weldEndedTimerName = _ini.Get("general", "WeldEndedTimer").ToString(_weldEndedTimerName);
                 var weldReadyTimerName = _ini.Get("general", "WeldReadyTimer").ToString(_weldReadyTimerName);
@@ -100,27 +102,46 @@ namespace IngameScript {
                 _lcdComponentStatus = lookup.GetBlockWithName<IMyTextPanel>(lcdComponentStatusName, true);
                 _pistons = lookup.GetBlocksInGroup<IMyExtendedPistonBase>(pistonGroupName, true);
                 _productionAssembler = lookup.GetBlockWithName<IMyAssembler>(productionAssemblerName, true);
-                _projectorLarge = lookup.GetBlockWithName<IMyProjector>(projectorLargeName, true);
-                _projectorSmall = lookup.GetBlockWithName<IMyProjector>(projectorSmallName);
                 _weldEndedTimer = lookup.GetBlockWithName<IMyTimerBlock>(weldEndedTimerName);
                 _weldReadyTimer = lookup.GetBlockWithName<IMyTimerBlock>(weldReadyTimerName);
                 _welders = lookup.GetBlocksInGroup<IMyShipWelder>(welderGroupName, true);
 
+                _projectors = projectors
+                    .Split(' ')
+                    .Select(part => part.Split(':'))
+                    .ToDictionary(split => split[0], split => lookup.GetBlockWithName<IMyProjector>(split[1], true));
+
+                var firstProjectorEntry = _projectors.FirstOrDefault();
+                _projector = firstProjectorEntry.Value;
+
+                if (_projector == null) {
+                    Echo("No projector found");
+                    return;
+                } else {
+                    _projector.Enabled = true;
+                    _projectorName = firstProjectorEntry.Key;
+                }
+
                 ExtractBlueprints();
+                Runtime.UpdateFrequency = UpdateFrequency.Update100;
             }
 
-            var projector = GetActiveProjector();
+            if (_projector == null) {
+                Echo("No projector found");
+                return;
+            }
+
             var currentBpId = _state == "Preparing" || _state == "Welding"
                 ? _previousBlueprint.ID
-                : GetProjectorBlueprintId(projector);
+                : GetProjectorBlueprintId(_projector);
             var currentBlueprint = _blueprints.GetValueOrDefault(currentBpId);
 
             if (currentBlueprint != _previousBlueprint && currentBlueprint != null) {
                 _state = "CheckBlueprint";
 
-                projector.ProjectionOffset = currentBlueprint.ProjectionOffset;
-                projector.ProjectionRotation = currentBlueprint.ProjectionRotation;
-                projector.UpdateOffsetAndRotation();
+                _projector.ProjectionOffset = currentBlueprint.ProjectionOffset;
+                _projector.ProjectionRotation = currentBlueprint.ProjectionRotation;
+                _projector.UpdateOffsetAndRotation();
 
                 UpdateComponentList(currentBlueprint);
             }
@@ -163,8 +184,8 @@ namespace IngameScript {
                         _output.Add("Can't save offset when no blueprint is loaded");
                         break;
                     }
-                    currentBlueprint.ProjectionOffset = projector.ProjectionOffset;
-                    currentBlueprint.ProjectionRotation = projector.ProjectionRotation;
+                    currentBlueprint.ProjectionOffset = _projector.ProjectionOffset;
+                    currentBlueprint.ProjectionRotation = _projector.ProjectionRotation;
                     currentBlueprint.Save(_ini);
                     Me.CustomData = _ini.ToString();
 
@@ -177,6 +198,19 @@ namespace IngameScript {
                     currentBlueprint.SetBlocksFromAssembler(_calculatorAssembler);
                     currentBlueprint.Save(_ini);
                     Me.CustomData = _ini.ToString();
+
+                    break;
+                case "SET_ACTIVE":
+                    IMyProjector newActiveProjector = _projectors.GetValueOrDefault(arguments[1]);
+
+                    if (newActiveProjector == null) {
+                        _output.Add($"Projector {arguments[1]} not found");
+                    } else {
+                        _projectors.Values.ToList().ForEach(projector => projector.Enabled = false);
+                        _projector = newActiveProjector;
+                        _projectorName = arguments[1];
+                        _projector.Enabled = true;
+                    }
 
                     break;
                 case "STOP":
@@ -205,6 +239,7 @@ namespace IngameScript {
 {(currentBlueprint == null ? "Unknown blueprint" : (currentBlueprint.Name ?? "Unnamed blueprint"))}
 Blueprint ID: {currentBpId}
 State: {_state}
+Active projector: {_projectorName}
 
 {String.Join("\n", _output.ToArray())}
 ".Trim());
@@ -265,14 +300,6 @@ State: {_state}
         void DistributePistonVelocity(double velocity) {
             float perPiston = (float)(velocity / _pistons.Count);
             _pistons.ForEach(p => p.Velocity = perPiston);
-        }
-
-        IMyProjector GetActiveProjector() {
-            if (_projectorLarge.Enabled && _projectorSmall.Enabled) {
-                Echo($"Warning: Both projectors enabled, large projector received preference");
-            }
-
-            return !_projectorLarge.Enabled && _projectorSmall.Enabled ? _projectorSmall : _projectorLarge;
         }
 
         void UpdateComponentList(BlueprintInfo blueprint) {

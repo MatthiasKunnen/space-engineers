@@ -54,6 +54,17 @@ select the calculator assembler, and click send to assembler. Lastly execute the
 
 Run the `RETRACT` command to recall the projector by compressing the pistons.
 
+## Active projector
+Multiple projectors are supported. The projectors are set up using the `Projectors` key. Each
+projector is defined by a friendly name and the name of the block separated by a colon. Example:
+
+```
+Projectors=Large:WeldWallLargeProjector Small:WeldWallSmallProjector Fighter:WeldWallFighterProjector
+```
+
+Set the active projector by running `SET_ACTIVE Small`. By default the first projector in the list
+will be active.
+
 # Config/Custom data
 The config format is that of an INI file which uses `key=value` lines. No spaces should exists
 around the `=`.
@@ -67,8 +78,7 @@ The following keys can be configured in the `general` section.
 | LcdComponentStatus              | WeldWallComponentStatus [LCD] | The name of the LCD displaying the status of components. Powered by [Automatic LCDs 2](https://steamcommunity.com/sharedfiles/filedetails/?id=822950976)                             |
 | PistonGroup                     | WeldWallPistons               | The name of the group containing the weld wall pistons                                                                                                                               |
 | ProductionAssembler             | WeldWallProductionAssembler   | The name of the assembler on which missing components will be queued                                                                                                                 |
-| ProjectorLarge                  | WeldWallProjectorLarge        | The name of the large weld wall projector                                                                                                                                            |
-| ProjectorSmall                  | WeldWallProjectorSmall        | The name of the optional small weld wall projector                                                                                                                                   |
+| Projectors                      | Large:WeldWallProjectorLarge  | The list of projectors in ShortName:BlockName format (See Active Projector section)                                                                                                  |
 | RetractVelocity                 | 4                             | The velocity of retracting the projector in m/s                                                                                                                                      |
 | WeldEndedTimer                  | WeldWallEndTimer              | The name of the optional timer block that will be run when welding ended                                                                                                             |
 | WeldReadyTimer                  | WeldWallReadyTimer            | The name of the optional timer block that will be run when welding can start. Execute the WELD argument to start welding                                                             |
