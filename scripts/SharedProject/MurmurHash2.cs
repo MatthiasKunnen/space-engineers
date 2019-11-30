@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 
-namespace SharedProject {
+namespace IngameScript {
     /// <summary>
     /// Implementation of Murmur Hash 2
     /// Taken from https://github.com/jitbit/MurmurHash.net

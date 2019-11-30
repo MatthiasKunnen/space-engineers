@@ -1,5 +1,4 @@
 using Sandbox.ModAPI.Ingame;
-using SharedProject;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;

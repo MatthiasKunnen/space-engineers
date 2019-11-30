@@ -2,7 +2,7 @@ using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 
-namespace SharedProject {
+namespace IngameScript {
     public class LookupHelper {
         public string NamePrefix { get; set; } = "";
         public IMyGridTerminalSystem GridTerminalSystem { get; set; }

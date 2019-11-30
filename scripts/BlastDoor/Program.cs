@@ -1,5 +1,4 @@
 using Sandbox.ModAPI.Ingame;
-using SharedProject;
 using System.Collections.Generic;
 
 namespace IngameScript {
