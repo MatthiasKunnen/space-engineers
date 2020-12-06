@@ -16,13 +16,6 @@ namespace IngameScript {
         public Vector3I ProjectionRotation { get; set; }
 
         public void Save(MyIni ini) {
-            var requirements = new List<string>();
-
-            foreach (var block in Blocks) {
-                requirements.Add($"{block.Key.Substring(block.Key.IndexOf('/') + 1)}:{block.Value}");
-            }
-
-            ini.Set(ID, "Blocks", string.Join(";", requirements));
             ini.Set(ID, "Name", Name);
             ini.Set(ID, "ProjectionOffsetHorizontal", ProjectionOffset.X);
             ini.Set(ID, "ProjectionOffsetVertical", ProjectionOffset.Y);
@@ -49,18 +42,6 @@ namespace IngameScript {
         }
 
         public static BlueprintInfo FromIni(MyIni ini, string id, Action<string> Echo) {
-            var blocks = new Dictionary<string, int>();
-
-            if (ini.ContainsKey(id, "Blocks")) {
-                foreach (var blockString in ini.Get(id, "Blocks").ToString("").Split(';')) {
-                    var blockStringArray = blockString.Split(':');
-                    var blueprintId = $"MyObjectBuilder_BlueprintDefinition/{blockStringArray[0]}";
-                    var amount = int.Parse(blockStringArray[1]);
-
-                    blocks.Add(blueprintId, amount);
-                }
-            }
-
             var projectionOffset = new Vector3I(
                 ini.Get(id, "ProjectionOffsetHorizontal").ToInt32(),
                 ini.Get(id, "ProjectionOffsetVertical").ToInt32(),
@@ -74,7 +55,7 @@ namespace IngameScript {
             );
 
             return new BlueprintInfo() {
-                Blocks = blocks,
+                Blocks = new Dictionary<string, int>(),
                 ID = id,
                 Name = ini.Get(id, "Name").ToString(),
                 ProjectionOffset = projectionOffset,

@@ -175,7 +175,8 @@ namespace IngameScript {
                     }
 
                     UpdateComponentList(currentBlueprint);
-                    _output.Add("Send missing items to assemblers manually");
+                    AssembleMissing();
+                    _output.Add("Assembly of missing items in progress");
                     _state = "Preparing";
 
                     break;
@@ -186,16 +187,6 @@ namespace IngameScript {
                     }
                     currentBlueprint.ProjectionOffset = _projector.ProjectionOffset;
                     currentBlueprint.ProjectionRotation = _projector.ProjectionRotation;
-                    currentBlueprint.Save(_ini);
-                    Me.CustomData = _ini.ToString();
-
-                    break;
-                case "SAVE_REQUIREMENTS":
-                    if (currentBlueprint == null) {
-                        _output.Add("Can't save requirements when no blueprint is loaded");
-                        break;
-                    }
-                    currentBlueprint.SetBlocksFromAssembler(_calculatorAssembler);
                     currentBlueprint.Save(_ini);
                     Me.CustomData = _ini.ToString();
 
@@ -243,6 +234,12 @@ Active projector: {_projectorName}
 
 {String.Join("\n", _output.ToArray())}
 ".Trim());
+        }
+
+        void AssembleMissing() {
+            _projector.CustomData = _productionAssemblerName;
+            _projector.ApplyAction("AssembleMissing");
+            _projector.CustomData = "";
         }
 
         void Stop() {
@@ -302,7 +299,18 @@ Active projector: {_projectorName}
             _pistons.ForEach(p => p.Velocity = perPiston);
         }
 
+        void UpdateBlueprintRequirements(BlueprintInfo blueprint) {
+            _calculatorAssembler.ClearQueue();
+            _projector.CustomData = _calculatorAssemblerName;
+            _projector.ApplyAction("AssembleAll");
+            blueprint.SetBlocksFromAssembler(_calculatorAssembler);
+            _calculatorAssembler.ClearQueue();
+            _projector.CustomData = "";
+        }
+
         void UpdateComponentList(BlueprintInfo blueprint) {
+            UpdateBlueprintRequirements(blueprint);
+
             var requirements = new List<string>();
 
             foreach (var block in blueprint.Blocks) {

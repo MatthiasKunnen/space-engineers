@@ -35,11 +35,6 @@ the name of the blueprint. You can now edit the projector offset to align the bl
 fit. The offset can be saved by running the `SAVE_OFFSET` argument. This information will be added
 to the custom data of the programmable block.
 
-The script still needs to know the exact amount of components it requires. Go to the calculator
-assembler and clear its queue. Now go the projector that has the blueprint loaded, scroll down,
-select the calculator assembler, and click send to assembler. Lastly execute the
-`SAVE_REQUIREMENTS` command.
-
 ## Start welding
 
 1. Make sure a blueprint is loaded and the blueprint info LCD reports the correct blueprint name
