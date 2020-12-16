@@ -5,17 +5,17 @@ A script for drilling down with spinning drills
 The config is done via custom data of the programmable block and is formatted as an INI file.
 The general section has the following properties:
 
-- *LcdInfo* The name of the LCD on which progress will be displayed
-- *PistonLowerSpeed* The speed in m/s used to lower the pistons with the `LOWER` command
-- *DrillSpeedMeterPerSecond* The speed of the drill at the edge in m/s, otherwise known as tangential
-velocity
+- **DrillSpeedMeterPerSecond** The speed of the drill at the edge in m/s, otherwise known as tangential
+  velocity
+- **LcdInfo** The name of the LCD on which progress will be displayed
+- **PistonLowerSpeed** The speed in m/s used to lower the pistons with the `LOWER` command
 
-All other sections describe a spinner.
+All other sections describe a spinner. The section name is the name of the spinner.
 
-- *Arms* How many arms the spinner has
-- *DrillGroupName* The name of this spinner's drill group
-- *PistonGroupName* The name of this spinner's piston group
-- *RotorName* The name of this spinner's rotor
+- **Arms** How many arms the spinner has
+- **DrillGroupName** The name of this spinner's drill group
+- **PistonGroupName** The name of this spinner's piston group
+- **RotorName** The name of this spinner's rotor
 
 Example:
 ```ini
