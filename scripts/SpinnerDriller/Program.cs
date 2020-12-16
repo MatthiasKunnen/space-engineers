@@ -11,7 +11,7 @@ namespace IngameScript {
         readonly string _lcdInfoName = "Spinner Driller Info LCD"; // Overwrite: General.LcdInfo
         IMyTextPanel _lcdInfo;
 
-        private float _drillSpeedMetersPerSecond = 2.1f;  // Overwrite: General.DrillSpeedMeterPerSecond
+        private float _drillSpeedMetersPerSecond = 0.2f;  // Overwrite: General.DrillSpeedMeterPerSecond
         readonly MyIni _ini = new MyIni();
         private bool _isFast = false;
         readonly List<string> _output = new List<string>();
