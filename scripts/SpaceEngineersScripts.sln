@@ -19,6 +19,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpinnerDriller", "SpinnerDriller\SpinnerDriller.csproj", "{FC7D6679-8BE6-4E1D-8247-3DA2243796E9}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		SharedProject\SharedProject.projitems*{0cf6e1a8-029c-4879-9d8e-a4dbbd1e38dc}*SharedItemsImports = 13
@@ -27,6 +29,7 @@ Global
 		SharedProject\SharedProject.projitems*{ba775859-7e02-468f-8f92-277a820a888a}*SharedItemsImports = 4
 		SharedProject\SharedProject.projitems*{c2bafd8e-7675-4777-9f94-d534b609b8c3}*SharedItemsImports = 4
 		SharedProject\SharedProject.projitems*{eb7a9a35-b786-430b-b4cc-c97fc083ebb7}*SharedItemsImports = 4
+		SharedProject\SharedProject.projitems*{fc7d6679-8be6-4e1d-8247-3da2243796e9}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -42,6 +45,8 @@ Global
 		{8AB63DA2-1C44-44C0-86E4-D32EC82924BC}.Debug|x64.Build.0 = Debug|x64
 		{3D3468B0-ABCC-4553-8DF0-B8B42DE888E7}.Debug|x64.ActiveCfg = Debug|x64
 		{3D3468B0-ABCC-4553-8DF0-B8B42DE888E7}.Debug|x64.Build.0 = Debug|x64
+		{FC7D6679-8BE6-4E1D-8247-3DA2243796E9}.Debug|x64.ActiveCfg = Debug|x64
+		{FC7D6679-8BE6-4E1D-8247-3DA2243796E9}.Debug|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
