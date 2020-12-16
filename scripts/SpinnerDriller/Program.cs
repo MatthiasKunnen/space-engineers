@@ -11,13 +11,13 @@ namespace IngameScript {
         readonly string _lcdInfoName = "Spinner Driller Info LCD"; // Overwrite: General.LcdInfo
         IMyTextPanel _lcdInfo;
 
+        private float _drillSpeedMetersPerSecond = 2.1f;  // Overwrite: General.DrillSpeedMeterPerSecond
         readonly MyIni _ini = new MyIni();
         private bool _isFast = false;
         readonly List<string> _output = new List<string>();
         private float _pistonExtendFast = 5f;
         private float _pistonExtendSlow = 2.5f;
         private float _pistonLowerSpeed = 0.3f; // Overwrite: General.PistonLowerSpeed
-        private float _drillSpeedMetersPerSecond = 2.1f;  // Overwrite: General.DrillSpeedMeterPerSecond
         private Dictionary<string, SpinnerInfo> _spinners;
 
         public Program() {
