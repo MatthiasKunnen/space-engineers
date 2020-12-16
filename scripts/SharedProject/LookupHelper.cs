@@ -1,11 +1,27 @@
 using Sandbox.ModAPI.Ingame;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace IngameScript {
     public class LookupHelper {
         public string NamePrefix { get; set; } = "";
         public IMyGridTerminalSystem GridTerminalSystem { get; set; }
+
+        /// <summary>
+        /// Returns the blocks of the first group which matches the given names. Errors if no groups are found.
+        /// </summary>
+        public List<T> GetBlocksInFirstGroup<T>(List<string> groupNames) where T : class {
+            foreach (var name in groupNames) {
+                var blocks = GetBlocksInGroup<T>(name);
+
+                if (blocks != null) {
+                    return blocks;
+                }
+            }
+
+            throw new Exception($"No groups named [{String.Join(", ", groupNames.Select(name => $"\"{name}\""))}] found");
+        }
 
         public List<T> GetBlocksInGroup<T>(string groupName, bool errorIfNotExists = false) where T : class {
             var groups = new List<IMyBlockGroup>();
@@ -53,6 +69,21 @@ namespace IngameScript {
             }
 
             return block;
+        }
+
+        /// <summary>
+        /// Returns the first block which matches the given names. Errors if no block is found.
+        /// </summary>
+        public T GetFirstBlockWithName<T>(List<string> blockNames) where T : class {
+            foreach (var name in blockNames) {
+                var block = GetBlockWithName<T>(name);
+
+                if (block != null) {
+                    return block;
+                }
+            }
+
+            throw new Exception($"No block named [{String.Join(", ", blockNames.Select(name => $"\"{name}\""))}] found");
         }
 
         public List<T> SearchBlocksWithName<T>(string name) where T : class {

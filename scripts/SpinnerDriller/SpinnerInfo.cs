@@ -29,13 +29,35 @@ namespace IngameScript {
             }
 
             public static SpinnerInfo FromIni(MyIni ini, string sectionName, LookupHelper lookupHelper) {
+                var drillGroupNames = GetNamesWithPrefix(ini, sectionName, "DrillGroupName");
+                var pistonGroupNames = GetNamesWithPrefix(ini, sectionName, "PistonGroupName");
+                var rotorNames = GetNamesWithPrefix(ini, sectionName, "RotorName");
+
                 return new SpinnerInfo() {
                     Arms = ini.Get(sectionName, "Arms").ToInt32(),
-                    Drills = lookupHelper.GetBlocksInGroup<IMyShipDrill>(ini.Get(sectionName, "DrillGroupName").ToString(), true),
-                    Pistons = lookupHelper.GetBlocksInGroup<IMyPistonBase>(ini.Get(sectionName, "PistonGroupName").ToString(), true),
-                    Rotor = lookupHelper.GetBlockWithName<IMyMotorAdvancedStator>(ini.Get(sectionName, "RotorName").ToString(), true),
+                    Drills = lookupHelper.GetBlocksInFirstGroup<IMyShipDrill>(drillGroupNames),
+                    Pistons = lookupHelper.GetBlocksInFirstGroup<IMyPistonBase>(pistonGroupNames),
+                    Rotor = lookupHelper.GetFirstBlockWithName<IMyMotorAdvancedStator>(rotorNames),
                     StartAngle = ini.Get(sectionName, "StartPosition").ToDouble(999),
                 };
+            }
+
+            private static List<string> GetNamesWithPrefix(MyIni ini, string sectionName, string key) {
+                var names = new List<string>();
+
+                var value = ini.Get(sectionName, key);
+
+                if (!value.IsEmpty) {
+                    names.Add(value.ToString());
+                }
+
+                var prefixValue = ini.Get("General", $"{key}Prefix");
+
+                if (!prefixValue.IsEmpty) {
+                    names.Add($"{prefixValue} {sectionName}");
+                }
+
+                return names;
             }
         }
     }
