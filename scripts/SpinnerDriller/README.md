@@ -16,8 +16,8 @@ The general section has the following properties:
 - **PistonLowerSpeed** The speed in m/s used to lower the pistons with the `LOWER` command
 - **PistonGroupNamePrefix** If you do not specify _PistonGroupName_ in the spinner config, this prefix
   will be used, appended with the section name, to find the pistons of the spinner.
-- *RotorNamePrefix* If you do not specify _RotorGroupName_ in the spinner config, this prefix will
-  be used, appended with the section name, to find the rotors of the spinner.
+- **RotorNamePrefix** If you do not specify _RotorGroupName_ in the spinner config, this prefix
+  will be used, appended with the section name, to find the rotor of the spinner.
 
 All other sections describe a spinner. The section name is the name of the spinner.
 
