@@ -21,7 +21,7 @@ namespace IngameScript {
                     _targetVelocityRotor = drillSpeedMetersPerSecond / radius;
 
                     if (isFast) {
-                        _targetVelocityRotor *= 5;
+                        _targetVelocityRotor *= 10;
                     }
                 }
 
