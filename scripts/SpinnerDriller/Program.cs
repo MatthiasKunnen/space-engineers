@@ -34,17 +34,15 @@ namespace IngameScript {
                 case "":
                     foreach (var entry in _spinners) {
                         var spinner = entry.Value;
-                        var currentAngle = spinner.Rotor.Angle;
-                        var changeInAngle = Utils.RadiansToDegrees(Math.Abs(spinner.StartAngle - currentAngle));
-                        var cycleOccurred = changeInAngle > (360 / spinner.Arms);
+                        var cycleStatus = spinner.CalculateCycleStatus();
                         var maxPosition = spinner.Pistons.Sum(piston => piston.HighestPosition);
                         var currentPosition = spinner.Pistons.Sum(piston => piston.CurrentPosition);
 
                         _output.Add($"{entry.Key}:");
                         _output.Add($"  {Math.Round(currentPosition, 2)} m/{Math.Round(maxPosition, 2)} m");
-                        _output.Add($"  Change in angle: {Math.Round(changeInAngle)}°");
+                        _output.Add($"  Change in angle: {Math.Round(cycleStatus.ChangeInAngle)}°");
 
-                        if (!cycleOccurred) {
+                        if (!cycleStatus.CycleFinished) {
                             continue;
                         }
 
@@ -53,7 +51,6 @@ namespace IngameScript {
                             spinner.Drills.ForEach(drill => drill.Enabled = false);
                         }
 
-                        spinner.StartAngle = currentAngle;
                         var extendTotalBy = _isFast ? _pistonExtendFast : _pistonExtendSlow;
 
                         foreach (var piston in spinner.Pistons) {
@@ -104,10 +101,6 @@ namespace IngameScript {
 
                         var spinnerInfo = SpinnerInfo.FromIni(_ini, section, lookup);
                         _spinners.Add(section, spinnerInfo);
-
-                        if (spinnerInfo.StartAngle == 999) {
-                            spinnerInfo.StartAngle = spinnerInfo.Rotor.Angle;
-                        }
                     });
 
                     break;
