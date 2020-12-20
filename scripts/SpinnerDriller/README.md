@@ -1,5 +1,14 @@
 # Spinner driller
-A script for drilling down with spinning drills
+A script for drilling down with spinning drills.
+
+1 | 2 | 3
+:-:|:-:|:-:
+![Screenshot 1](./screenshots/1.png) | ![](./screenshots/2.png) | ![](./screenshots/3.png)
+
+## Building setup
+The script supports infinite pistons and drills. Build pistons followed by an advanced rotor
+followed by drills and apply the naming as explained in the [Config](#config). Make sure all
+pistons share the inertia tensor.
 
 ## Config
 The config is done via custom data of the programmable block and is formatted as an INI file.
