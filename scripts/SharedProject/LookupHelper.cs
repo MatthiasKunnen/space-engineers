@@ -34,7 +34,13 @@ namespace IngameScript {
 
                     groups[i].GetBlocks(groupBlocks);
                     for (int t = 0; t < groupBlocks.Count; t++) {
-                        result.Add(groupBlocks[t] as T);
+                        var block = groupBlocks[t] as T;
+
+                        if (block == null) {
+                            continue;
+                        }
+
+                        result.Add(block);
                     }
 
                     return result;
