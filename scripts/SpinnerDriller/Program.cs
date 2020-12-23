@@ -149,6 +149,7 @@ namespace IngameScript {
                     _isFast = !_isFast;
 
                     foreach (var spinner in _spinners.Values) {
+                        spinner.Drills.ForEach(drill => drill.Enabled = !_isFast);
                         spinner.Rotor.TargetVelocityRad = spinner.GetTargetVelocityRotorRad(_isFast, _drillSpeedMetersPerSecond);
                     }
 
