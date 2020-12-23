@@ -110,6 +110,13 @@ namespace IngameScript {
                     }
 
                     break;
+
+                case "RETRACT":
+                    foreach (var spinner in _spinners.Values) {
+                        spinner.Pistons.ForEach(piston => piston.Reverse());
+                    }
+
+                    break;
                 case "START":
                     foreach (var spinner in _spinners.Values) {
                         spinner.Drills.ForEach(drill => drill.Enabled = true);
