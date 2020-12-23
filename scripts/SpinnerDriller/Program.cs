@@ -113,7 +113,8 @@ namespace IngameScript {
 
                 case "RETRACT":
                     foreach (var spinner in _spinners.Values) {
-                        spinner.Pistons.ForEach(piston => piston.Reverse());
+                        var velocity = -3f / spinner.Pistons.Count;
+                        spinner.Pistons.ForEach(piston => piston.Velocity = velocity);
                     }
 
                     break;
