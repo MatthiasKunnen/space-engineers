@@ -18,22 +18,28 @@ It:
 1. Runs optional timer blocks at certain events to allow for extensive configuration
 
 ## Adding a blueprint
-Load the blueprint into the designated projector. The blueprint LCD should display the id of the
-blueprint. Edit the LCD and copy the ID to the custom data of the programmable block. The id should
-become the section name. Example:
+1. Make sure the correct projector is active, see the [Active projector](#active-projector)
+   section.
+1. Load the blueprint into the designated projector.  
+   The blueprint info LCD should say _Unknown blueprint_ and display the id of the blueprint. 
+1. Change the offset and rotation of the projection to your liking.
+1. Now run the `SAVE_OFFSET` argument.  
+   This will create a new entry in the custom data of the programmable block.
+1. Change the name of your blueprint (optional)  
+   If you want to change the name of the blueprint, edit the custom data of the programmable block
+   and look for the ID in the section name of the INI configuration. The section has a name key
+   which you can change. After changing this name key, run the `PARSE` argument. The LCD should now
+   display the new name.
 
-```ini
-[general]
-PistonGroup=WeldWallPistons
+   Example of what you're looking for in the custom data:
 
-[ID_HERE]
-Name=My cool ship
-```
+   ```ini
+   [general]
+   PistonGroup=WeldWallPistons
 
-Now run the programmable block with the `PARSE` argument. The blueprint info LCD should now display
-the name of the blueprint. You can now edit the projector offset to align the blueprint as you see
-fit. The offset can be saved by running the `SAVE_OFFSET` argument. This information will be added
-to the custom data of the programmable block.
+   [ID_HERE]
+   Name=My cool ship
+   ```
 
 ## Start welding
 

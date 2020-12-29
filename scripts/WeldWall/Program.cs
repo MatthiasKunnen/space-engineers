@@ -182,9 +182,14 @@ namespace IngameScript {
                     break;
                 case "SAVE_OFFSET":
                     if (currentBlueprint == null) {
-                        _output.Add("Can't save offset when no blueprint is loaded");
-                        break;
+                        currentBlueprint = new BlueprintInfo() {
+                            ID = currentBpId,
+                            Name = currentBpId,
+                        };
+                        UpdateComponentList(currentBlueprint);
+                        _blueprints.Add(currentBpId, currentBlueprint);
                     }
+
                     currentBlueprint.ProjectionOffset = _projector.ProjectionOffset;
                     currentBlueprint.ProjectionRotation = _projector.ProjectionRotation;
                     currentBlueprint.Save(_ini);

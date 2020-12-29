@@ -9,7 +9,7 @@ namespace IngameScript {
         /// <summary>
         /// Dictionary containing key (definition of block), value (amount).
         /// </summary>
-        public Dictionary<string, int> Blocks { get; set; }
+        public Dictionary<string, int> Blocks { get; set; } = new Dictionary<string, int>();
         public string ID { get; set; }
         public string Name { get; set; }
         public Vector3I ProjectionOffset { get; set; }
@@ -55,7 +55,6 @@ namespace IngameScript {
             );
 
             return new BlueprintInfo() {
-                Blocks = new Dictionary<string, int>(),
                 ID = id,
                 Name = ini.Get(id, "Name").ToString(),
                 ProjectionOffset = projectionOffset,
