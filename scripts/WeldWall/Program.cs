@@ -17,7 +17,7 @@ namespace IngameScript {
         readonly string _lcdComponentStatusName = "WeldWallComponentStatus [LCD]";
         IMyTextPanel _lcdComponentStatus;
 
-        readonly string _lcdWeldStatusName = "WeldWallWeldProgressLcd";
+        readonly string _lcdWeldStatusName = "WeldWallWeldProgressLcd [LCD]";
         IMyTextPanel _lcdWeldStatus;
 
         readonly string _pistonGroupName = "WeldWallPistons";
@@ -173,7 +173,9 @@ namespace IngameScript {
                     }
 
                     var buildProgress = _projector.DetailedInfo.Substring(_projector.DetailedInfo.IndexOf("Build progress"));
-                    _lcdWeldStatus?.WriteText(buildProgress);
+                    if (_lcdWeldStatus != null) {
+                        _lcdWeldStatus.CustomData = Utils.ToMmasterLcd(buildProgress);
+                    }
 
                     break;
                 case "PREPARE":
