@@ -17,6 +17,9 @@ namespace IngameScript {
         readonly string _lcdComponentStatusName = "WeldWallComponentStatus [LCD]";
         IMyTextPanel _lcdComponentStatus;
 
+        readonly string _lcdWeldStatusName = "WeldWallWeldProgressLcd";
+        IMyTextPanel _lcdWeldStatus;
+
         readonly string _pistonGroupName = "WeldWallPistons";
         List<IMyExtendedPistonBase> _pistons;
 
@@ -84,6 +87,7 @@ namespace IngameScript {
                 var calculatorAssemblerName = _ini.Get("general", "CalculatorAssembler").ToString(_calculatorAssemblerName);
                 var lcdBlueprintInfoName = _ini.Get("general", "LcdBlueprintInfo").ToString(_lcdBlueprintInfoName);
                 var lcdComponentStatusName = _ini.Get("general", "LcdComponentStatus").ToString(_lcdComponentStatusName);
+                var lcdWeldStatusName = _ini.Get("general", "LcdWeldStatus").ToString(_lcdWeldStatusName);
                 var pistonGroupName = _ini.Get("general", "PistonGroup").ToString(_pistonGroupName);
                 var productionAssemblerName = _ini.Get("general", "ProductionAssembler").ToString(_productionAssemblerName);
                 var projectors = _ini.Get("general", "Projectors").ToString("Large:WeldWallLargeProjector");
@@ -100,6 +104,7 @@ namespace IngameScript {
                 _calculatorAssembler = lookup.GetBlockWithName<IMyAssembler>(calculatorAssemblerName, true);
                 _lcdBlueprintInfo = lookup.GetBlockWithName<IMyTextPanel>(lcdBlueprintInfoName, true);
                 _lcdComponentStatus = lookup.GetBlockWithName<IMyTextPanel>(lcdComponentStatusName, true);
+                _lcdWeldStatus = lookup.GetBlockWithName<IMyTextPanel>(lcdWeldStatusName);
                 _pistons = lookup.GetBlocksInGroup<IMyExtendedPistonBase>(pistonGroupName, true);
                 _productionAssembler = lookup.GetBlockWithName<IMyAssembler>(productionAssemblerName, true);
                 _weldEndedTimer = lookup.GetBlockWithName<IMyTimerBlock>(weldEndedTimerName);
@@ -166,6 +171,9 @@ namespace IngameScript {
                             _state = "CheckBlueprint";
                         }
                     }
+
+                    var buildProgress = _projector.DetailedInfo.Substring(_projector.DetailedInfo.IndexOf("Build progress"));
+                    _lcdWeldStatus?.WriteText(buildProgress);
 
                     break;
                 case "PREPARE":
